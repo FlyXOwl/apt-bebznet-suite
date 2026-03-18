@@ -1,9 +1,13 @@
-Package: bebznet-suite
-Version: 1.0.0
-Architecture: amd64
-Maintainer: FlyXOwl
+Source: bebznet-suite
+Maintainer: FlyXOwl <flyxall8436@gmail.com>
 Homepage: https://github.com/FlyXOwl/apt-bebznet-suite
+Section: admin
+Priority: optional
+Standards-Version: 4.6.0
+Build-Depends: debhelper-compat (= 13)
+
+Package: bebznet-suite
+Architecture: amd64
+Version: 1.0.0
 Depends: docker.io (>= 20.10), docker-compose (>= 1.29), curl, gum (>= 0.8.0)
 Recommends: net-tools, htop
-Priority: optional
-Section: admin
