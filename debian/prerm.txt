@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -e
+
+case "$1" in
+    remove|deconfigure)
+        echo "Arrêt du service bebznet..."
+
+        if [ -d /opt/bebznet ] && [ -f /opt/bebznet/docker-compose.yml ]; then
+            cd /opt/bebznet
+            docker-compose down 2>/dev/null || true
+        fi
+        ;;
+esac
+
+#DEBHELPER#

@@ -1,0 +1,17 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_install:
+	mkdir -p debian/bebznet-suite/usr/local/bin
+	mkdir -p debian/bebznet-suite/usr/share/bebznet/templates
+	mkdir -p debian/bebznet-suite/etc/bebznet
+
+	install -m 0755 src/bebznet-config debian/bebznet-suite/usr/local/bin/bebznet-config
+
+	install -m 0644 src/templates/docker-compose.yml.tpl debian/bebznet-suite/usr/share/bebznet/templates/docker-compose.yml.tpl
+
+	mkdir -p debian/bebznet-suite/opt/bebznet/data
+
+override_dh_auto_test:

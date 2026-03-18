@@ -1,0 +1,524 @@
+#!/bin/bash
+
+################################################################################
+# bebznet-config - CLI interactif de configuration pour bebznet-suite
+# Author: FlyXOwl
+# License: GPL-3.0
+################################################################################
+
+set -e
+
+COLOR_BLUE='\033[0;34m'
+COLOR_GREEN='\033[0;32m'
+COLOR_YELLOW='\033[1;33m'
+COLOR_RED='\033[0;31m'
+COLOR_MAGENTA='\033[0;35m'
+NC='\033[0m'
+
+
+CONFIG_DIR="/etc/bebznet"
+DOCKER_DIR="/opt/bebznet"
+TEMPLATES_DIR="/usr/share/bebznet/templates"
+
+
+check_root() {
+    if [ "$EUID" -ne 0 ]; then
+        echo -e "${COLOR_RED} Ce script doit être exécuté en tant que root${NC}"
+        exit 1
+    fi
+}
+
+check_docker() {
+    if ! command -v docker &> /dev/null; then
+        echo -e "${COLOR_RED}Docker n'est pas installé${NC}"
+        echo "Installez-le avec: sudo apt install docker.io"
+        exit 1
+    fi
+    
+    if ! command -v docker-compose &> /dev/null; then
+        echo -e "${COLOR_RED}docker-compose n'est pas installé${NC}"
+        echo "Installez-le avec: sudo apt install docker-compose"
+        exit 1
+    fi
+}
+
+check_gum() {
+    if ! command -v gum &> /dev/null; then
+        echo -e "${COLOR_YELLOW}gum n'est pas installé. Installation en cours...${NC}"
+        install_gum
+    fi
+}
+
+install_gum() {
+    echo "Installation de gum..."
+    
+    ARCH=$(uname -m)
+    case $ARCH in
+        x86_64)
+            ARCH="amd64"
+            ;;
+        aarch64)
+            ARCH="arm64"
+            ;;
+        *)
+            echo "Architecture non supportée: $ARCH"
+            exit 1
+            ;;
+    esac
+    
+    GUM_VERSION="0.14.2"
+    GUM_URL="https://github.com/charmbracelet/gum/releases/download/v${GUM_VERSION}/gum-linux-${ARCH}.tar.gz"
+    
+    curl -fsSL "$GUM_URL" | tar xzf - -C /usr/local/bin gum
+    chmod +x /usr/local/bin/gum
+    
+    echo "gum installé avec succès"
+}
+
+clear_screen() {
+    clear || printf '\033[2J\033[H'
+}
+
+
+
+
+
+
+main_menu() {
+    clear_screen
+    
+    gum style \
+        --foreground 212 \
+        --bold \
+        "╔════════════════════════════════════╗" \
+        "║        bebznet-suite v1.0.0        ║" \
+        "║    Docker network configuration    ║" \
+        "╚════════════════════════════════════╝"
+    
+    echo ""
+    
+    choice=$(gum choose \
+        "Configurer les services" \
+        "Déployer le stack" \
+        "Voir la configuration" \
+        "Arrêter/Supprimer le stack" \
+        "À propos" \
+        "Quitter" \
+        --header="Que souhaitez-vous faire ?" \
+        --height 10)
+    
+    case "$choice" in
+        "Configurer les services")   configure_services ;;
+        "Déployer le stack")        deploy_stack ;;
+        "Voir la configuration")  view_config ;;
+        "Arrêter/Supprimer le stack")   manage_stack ;;
+        "À propos")              show_about ;;
+        "Quitter")                exit 0 ;;
+    esac
+    
+    main_menu
+}
+
+
+
+configure_services() {
+    clear_screen
+    gum style --foreground 51 --bold "🔧 Configuration des services"
+    echo ""
+    
+    services=$(gum choose \
+        "pihole" "unbound" "nginx" "wgeasy" \
+        "uptime-kuma" "portainer" "crowdsec" \
+        "samba" "filebrowser" \
+        --no-limit \
+        --header="Sélectionnez les services à configurer:" \
+        --height 15)
+    
+    if [ -z "$services" ]; then
+        gum style --foreground 226 "Aucun service sélectionné"
+        read -p "Appuyez sur Entrer pour continuer..."
+        return
+    fi
+    
+    for service in $services; do
+        configure_service "$service"
+    done
+    
+    gum style --foreground 46 "Services configurés avec succès !"
+    read -p "Appuyez sur Entrer pour continuer..."
+}
+
+configure_service() {
+    local service=$1
+    clear_screen
+    gum style --foreground 220 --bold "Configuration en cours de : $service"
+    echo ""
+    
+    case "$service" in
+        "pihole")     config_pihole ;;
+        "unbound")    config_unbound ;;
+        "nginx")      config_nginx ;;
+        "wgeasy")     config_wgeasy ;;
+        "uptime-kuma") config_uptime_kuma ;;
+        "portainer")  config_portainer ;;
+        "crowdsec")   config_crowdsec ;;
+        "samba")      config_samba ;;
+        "filebrowser") config_filebrowser ;;
+    esac
+}
+
+
+
+config_pihole() {
+    echo "Configuration de Pi-hole + Unbound"
+    echo ""
+    
+    PIHOLE_PASSWORD=$(gum input --password --placeholder="Mot de passe admin Pi-hole")
+    PIHOLE_TIMEZONE=$(gum input --placeholder="Timezone" --value="Europe/Paris")
+    
+    mkdir -p "$CONFIG_DIR"
+    
+    cat > "$CONFIG_DIR/pihole.env" << EOF
+PIHOLE_PASSWORD=$PIHOLE_PASSWORD
+PIHOLE_TIMEZONE=$PIHOLE_TIMEZONE
+EOF
+    
+    gum style --foreground 46 "✓ Pi-hole configuré"
+}
+
+config_unbound() {
+    echo "Configuration de Unbound"
+    echo ""
+    
+    UNBOUND_FORWARD=$(gum input --placeholder="Forward DNS" --value="1.1.1.1")
+    
+    mkdir -p "$CONFIG_DIR"
+    
+    cat > "$CONFIG_DIR/unbound.env" << EOF
+UNBOUND_FORWARD_DNS=$UNBOUND_FORWARD
+EOF
+    
+    gum style --foreground 46 "✓ Unbound configuré"
+}
+
+config_nginx() {
+    echo "Configuration de Nginx (Reverse Proxy)"
+    echo ""
+    
+    NGINX_PORT=$(gum input --placeholder="Port HTTP" --value="80")
+    NGINX_DOMAIN=$(gum input --placeholder="Nom de domaine (facultatif)")
+    
+    mkdir -p "$CONFIG_DIR"
+    
+    cat > "$CONFIG_DIR/nginx.env" << EOF
+NGINX_PORT=$NGINX_PORT
+NGINX_DOMAIN=$NGINX_DOMAIN
+EOF
+    
+    gum style --foreground 46 "✓ Nginx configuré"
+}
+
+config_wgeasy() {
+    echo "Configuration de WireGuard Easy"
+    echo ""
+    
+    WG_HOST=$(gum input --placeholder="IP/Public Hostname")
+    WG_PORT=$(gum input --placeholder="Port" --value="51820")
+    WG_PASSWORD=$(gum input --password --placeholder="Mot de passe admin")
+    
+    mkdir -p "$CONFIG_DIR"
+    
+    cat > "$CONFIG_DIR/wgeasy.env" << EOF
+WG_HOST=$WG_HOST
+WG_PORT=$WG_PORT
+WG_PASSWORD=$WG_PASSWORD
+EOF
+    
+    gum style --foreground 46 "✓ WireGuard Easy configuré"
+}
+
+config_uptime_kuma() {
+    echo "Configuration de Uptime Kuma"
+    echo ""
+    
+    UPTIME_PORT=$(gum input --placeholder="Port" --value="3001")
+    UPTIME_TZ=$(gum input --placeholder="Timezone" --value="Europe/Paris")
+    
+    mkdir -p "$CONFIG_DIR"
+    
+    cat > "$CONFIG_DIR/uptime-kuma.env" << EOF
+UPTIME_PORT=$UPTIME_PORT
+UPTIME_TZ=$UPTIME_TZ
+EOF
+    
+    gum style --foreground 46 "✓ Uptime Kuma configuré"
+}
+
+config_portainer() {
+    echo "Configuration de Portainer"
+    echo ""
+    
+    PORTAINER_PORT=$(gum input --placeholder="Port" --value="9000")
+    PORTAINER_PASSWORD=$(gum input --password --placeholder="Mot de passe admin")
+    
+    mkdir -p "$CONFIG_DIR"
+    
+    cat > "$CONFIG_DIR/portainer.env" << EOF
+PORTAINER_PORT=$PORTAINER_PORT
+PORTAINER_PASSWORD=$PORTAINER_PASSWORD
+EOF
+    
+    gum style --foreground 46 "✓ Portainer configuré"
+}
+
+config_crowdsec() {
+    echo " Configuration de CrowdSec"
+    echo ""
+    
+    CROWDSEC_ENABLED=$(gum choose --no-limit \
+        "Activer CrowdSec" \
+        --header="CrowdSec Security" \
+        2>/dev/null || echo "")
+    
+    mkdir -p "$CONFIG_DIR"
+    
+    if [ -n "$CROWDSEC_ENABLED" ]; then
+        cat > "$CONFIG_DIR/crowdsec.env" << EOF
+CROWDSEC_ENABLED=true
+EOF
+    else
+        cat > "$CONFIG_DIR/crowdsec.env" << EOF
+CROWDSEC_ENABLED=false
+EOF
+    fi
+    
+    gum style --foreground 46 "✓ CrowdSec configuré"
+}
+
+config_samba() {
+    echo "Configuration de Samba"
+    echo ""
+    
+    SAMBA_WORKGROUP=$(gum input --placeholder="Workgroup" --value="WORKGROUP")
+    SAMBA_USER=$(gum input --placeholder="Username" --value="samba")
+    SAMBA_PASSWORD=$(gum input --password --placeholder="Password")
+    
+    mkdir -p "$CONFIG_DIR"
+    
+    cat > "$CONFIG_DIR/samba.env" << EOF
+SAMBA_WORKGROUP=$SAMBA_WORKGROUP
+SAMBA_USER=$SAMBA_USER
+SAMBA_PASSWORD=$SAMBA_PASSWORD
+EOF
+    
+    gum style --foreground 46 "✓ Samba configuré"
+}
+
+config_filebrowser() {
+    echo "Configuration de FileBrowser"
+    echo ""
+    
+    FB_PORT=$(gum input --placeholder="Port" --value="8080")
+    FB_ADMIN=$(gum input --placeholder="Admin username" --value="admin")
+    FB_PASSWORD=$(gum input --password --placeholder="Admin password")
+    
+    mkdir -p "$CONFIG_DIR"
+    
+    cat > "$CONFIG_DIR/filebrowser.env" << EOF
+FB_PORT=$FB_PORT
+FB_ADMIN=$FB_ADMIN
+FB_PASSWORD=$FB_PASSWORD
+EOF
+    
+    gum style --foreground 46 "✓ FileBrowser configuré"
+}
+
+
+deploy_stack() {
+    clear_screen
+    gum style --foreground 51 --bold "Déploiement du stack Docker"
+    echo ""
+    
+    check_docker
+    
+    # Create docker directory
+    mkdir -p "$DOCKER_DIR"
+    
+    # Generate docker-compose.yml
+    generate_docker_compose
+    
+    gum style --foreground 226 "Déploiement en cours... Cela peut prendre quelques minutes lors du premier lancement"
+    echo ""
+    
+    cd "$DOCKER_DIR"
+    
+    if docker-compose up -d 2>&1 | tee /tmp/docker-compose.log; then
+        sleep 3
+        gum style --foreground 46 "✓ Stack deployé avec succès !"
+        echo ""
+        gum style --foreground 51 --bold "Accès aux services:"
+        echo ""
+        
+        LOCAL_IP=$(hostname -I | awk '{print $1}')
+        
+        echo "  🔵 Pi-hole Admin:      http://$LOCAL_IP/admin"
+        echo "  🌐 Nginx:              http://$LOCAL_IP:8080"
+        echo "  🐳 Portainer:          http://$LOCAL_IP:9000"
+        echo "  ⏱️  Uptime Kuma:        http://$LOCAL_IP:3001"
+        echo "  📁 FileBrowser:        http://$LOCAL_IP:8080/fb"
+        echo "  🔐 WireGuard Easy:     http://$LOCAL_IP:51821"
+        echo ""
+        echo "Les logins se trouvent dans: $CONFIG_DIR/"
+        echo ""
+    else
+        gum style --foreground 196 "Deploiement échoué. Vérifiez les logs pour plus de détails."
+        echo "Voir les logs: cat /tmp/docker-compose.log"
+    fi
+    
+    read -p "Appuyez sur Entrer pour continuer..."
+}
+
+generate_docker_compose() {
+    local template="$TEMPLATES_DIR/docker-compose.yml.tpl"
+    local output="$DOCKER_DIR/docker-compose.yml"
+    
+    if [ ! -f "$template" ]; then
+        gum style --foreground 196 "Template introuvable: $template"
+        exit 1
+    fi
+    
+    # Copy template
+    cp "$template" "$output"
+    
+    # Load all environment variables
+    for env_file in "$CONFIG_DIR"/*.env; do
+        if [ -f "$env_file" ]; then
+            source "$env_file"
+        fi
+    done
+    
+    # Substitute variables in the docker-compose file
+    envsubst < "$template" > "$output"
+    
+    gum style --foreground 46 "✓ docker-compose.yml generé avec succès"
+}
+
+view_config() {
+    clear_screen
+    gum style --foreground 51 --bold "Configuration Actuelle"
+    echo ""
+    
+    if [ -d "$CONFIG_DIR" ] && [ "$(ls -A $CONFIG_DIR/*.env 2>/dev/null)" ]; then
+        for env_file in "$CONFIG_DIR"/*.env; do
+            if [ -f "$env_file" ]; then
+                filename=$(basename "$env_file")
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                gum style --foreground 220 --bold "$filename"
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                gum style --foreground 240 "$(cat "$env_file" | sed 's/PASSWORD.*/PASSWORD=****/g' | sed 's/password.*/password=****/g')"
+                echo ""
+            fi
+        done
+    else
+        gum style --foreground 226 "Aucune configuration trouvée"
+        echo "Exécutez 'Configurer les Services' en premier"
+    fi
+    
+    echo ""
+    if [ -f "$DOCKER_DIR/docker-compose.yml" ]; then
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        gum style --foreground 51 --bold "docker-compose.yml"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        head -30 "$DOCKER_DIR/docker-compose.yml"
+        echo ""
+        echo "... (truncated)"
+    fi
+    
+    read -p "Appuyez sur Entrer pour continuer..."
+}
+
+manage_stack() {
+    clear_screen
+    
+    choice=$(gum choose \
+        "Arrêter le Stack" \
+        "Supprimer le Stack (conserver les données)" \
+        "Supprimer le Stack (supprimer les données)" \
+        "Retour" \
+        --header="Gestion du Stack")
+    
+    case "$choice" in
+        "Arrêter le Stack")
+            cd "$DOCKER_DIR" 2>/dev/null && docker-compose down
+            gum style --foreground 46 "✓ Stack stopped"
+            ;;
+        "Supprimer le Stack (conserver les données)")
+            if gum confirm "Supprimer le Stack et conserver les données?"; then
+                cd "$DOCKER_DIR" 2>/dev/null && docker-compose down
+                gum style --foreground 46 "✓ Stack supprimé (données conservées dans $DOCKER_DIR/data)"
+            fi
+            ;;
+        "Supprimer le Stack (supprimer les données)")
+            if gum confirm "Supprimer les conteneurs ET supprimer toutes les données? Cette action ne peut pas être annulée!"; then
+                cd "$DOCKER_DIR" 2>/dev/null && docker-compose down -v
+                rm -rf "$DOCKER_DIR/data"
+                gum style --foreground 46 "✓ Le Stack et les données ont été supprimés"
+            fi
+            ;;
+    esac
+    
+    read -p "Appuyez sur Entrer pour continuer..."
+}
+
+show_about() {
+    clear_screen
+    gum style --foreground 212 << 'EOF'
+╔════════════════════════════════════════════════╗
+║             bebznet-suite v1.0.0               ║
+║         Networking stack pour Debian           ║
+╚════════════════════════════════════════════════╝
+
+Un stack réseau Docker complète
+installateur pour serveurs Debian (>=12).
+
+SERVICES INCLUS:
+• Pi-hole + Unbound (DNS/Blocage des pubs)
+• Nginx (Proxy inverse)
+• WireGuard Easy (Gestion VPN)
+• Uptime Kuma (Surveillance de disponibilité)
+• Portainer (Interface Web Docker)
+• CrowdSec (Détection de menaces)
+• Samba (Partage de fichiers)
+• FileBrowser (Gestionnaire de fichiers Web)
+
+FONCTIONNALITÉS:
+• Configuration CLI interactive (gum)
+• Sélection modulaire de services
+• Génération automatique de docker-compose
+• Déploiement en une seule commande
+
+AUTEUR: FlyXOwl
+LICENCE: GPL-3.0
+REPO: https://github.com/FlyXOwl/apt-bebznet-suite
+
+SYSTEM REQUIREMENTS:
+  • Debian 12+
+  • 1+ coeur CPU (minimum)
+  • 1+ GB RAM (minimum)
+  • 8GB disk space (minimum)
+  • Docker & docker-compose (installés automatiquement si manquants)
+EOF
+    echo ""
+    read -p "Appuyez sur Entrer pour continuer..."
+}
+
+
+main() {
+    check_root
+    check_gum
+    check_docker
+    
+    main_menu
+}
+
+main "$@"

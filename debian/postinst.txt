@@ -1,0 +1,42 @@
+#!/bin/bash
+
+set -e
+
+case "$1" in
+    configure)
+        mkdir -p /etc/bebznet
+        mkdir -p /opt/bebznet/data
+        mkdir -p /usr/share/bebznet/templates
+
+        chmod +x /usr/local/bin/bebznet-config
+
+        chown -R root:root /etc/bebznet /opt/bebznet /usr/share/bebznet
+
+        touch /etc/bebznet/.env-template
+
+        cat << 'EOF'
+
+╔════════════════════════════════════════════════╗
+║         apt-bebznet-suite installé !           ║
+╚════════════════════════════════════════════════╝
+
+Pour commencer, execute:
+  $ sudo bebznet-config
+
+Cette commande ouvre le menu de configuration
+
+Services inclus :
+  • Pi-hole + Unbound (DNS/AdBlocking)
+  • Nginx (Reverse Proxy)
+  • WireGuard Easy (VPN)
+  • Uptime Kuma (Monitoring)
+  • Portainer (Docker Management)
+  • CrowdSec (Security)
+  • Samba (File Sharing)
+  • FileBrowser (Web File Manager)
+
+EOF
+        ;;
+esac
+
+#DEBHELPER#

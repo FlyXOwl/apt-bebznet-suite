@@ -1,0 +1,7 @@
+bebznet-suite (1.0.0) bullseye; urgency=medium
+
+  * Initial release
+  * Support for Debian 11+
+  * Services: Pi-hole, Nginx, WireGuard, Uptime Kuma, Portainer, CrowdSec, Samba, FileBrowser
+
+ -- FlyXOwl Wed, 18 Mar 2026 00:00:00 +0000

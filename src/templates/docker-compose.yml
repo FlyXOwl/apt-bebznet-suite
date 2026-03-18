@@ -1,0 +1,200 @@
+version: '3.8'
+
+services:
+  pihole:
+    image: pihole/pihole:latest
+    container_name: bebznet-pihole
+    hostname: pihole
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "80:80/tcp"
+      - "443:443/tcp"
+    environment:
+      WEBPASSWORD: ${PIHOLE_PASSWORD:-changeme}
+      TZ: ${PIHOLE_TIMEZONE:-Europe/Paris}
+      DNSMASQ_USER: root
+      PIHOLE_UID: 999
+      PIHOLE_GID: 999
+    volumes:
+      - ./data/pihole:/etc/pihole
+      - ./data/dnsmasq:/etc/dnsmasq.d
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped
+    networks:
+      - bebznet
+    healthcheck:
+      test: ["CMD", "dig", "@localhost", "google.com"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  unbound:
+    image: klud/unbound:latest
+    container_name: bebznet-unbound
+    ports:
+      - "5053:53/tcp"
+      - "5053:53/udp"
+    volumes:
+      - ./data/unbound:/etc/unbound
+    restart: unless-stopped
+    networks:
+      - bebznet
+    healthcheck:
+      test: ["CMD", "dig", "@localhost", "-p", "5053", "google.com"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
+  nginx:
+    image: nginx:latest
+    container_name: bebznet-nginx
+    ports:
+      - "${NGINX_PORT:-80}:80"
+      - "${NGINX_SSL_PORT:-443}:443"
+    volumes:
+      - ./data/nginx/conf:/etc/nginx/conf.d
+      - ./data/nginx/html:/usr/share/nginx/html
+      - ./data/nginx/certs:/etc/nginx/certs
+    environment:
+      TZ: ${PIHOLE_TIMEZONE:-Europe/Paris}
+    restart: unless-stopped
+    networks:
+      - bebznet
+    depends_on:
+      - pihole
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  wgeasy:
+    image: weejewel/wg-easy:latest
+    container_name: bebznet-wgeasy
+    ports:
+      - "${WG_PORT:-51820}:51820/udp"
+      - "51821:51821/tcp"
+    volumes:
+      - ./data/wgeasy:/etc/wireguard
+    environment:
+      WG_HOST: ${WG_HOST:-localhost}
+      PASSWORD: ${WG_PASSWORD:-changeme}
+      WG_PORT: ${WG_PORT:-51820}
+      UI_TRAFFIC_STATS: "true"
+      UI_CHART_TYPE: "0"
+      LANG: "en"
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.forwarding=1
+      - net.ipv6.conf.all.forwarding=1
+    restart: unless-stopped
+    networks:
+      - bebznet
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: bebznet-uptime-kuma
+    ports:
+      - "${UPTIME_PORT:-3001}:3001"
+    volumes:
+      - ./data/uptime-kuma:/app/data
+    environment:
+      TZ: ${UPTIME_TZ:-Europe/Paris}
+      PUID: 1000
+      PGID: 1000
+    restart: unless-stopped
+    networks:
+      - bebznet
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: bebznet-portainer
+    ports:
+      - "${PORTAINER_PORT:-9000}:9000"
+      - "8443:8443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data/portainer:/data
+    environment:
+      TZ: ${PIHOLE_TIMEZONE:-Europe/Paris}
+    restart: unless-stopped
+    networks:
+      - bebznet
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  crowdsec:
+    image: crowdsecurity/crowdsec:latest
+    container_name: bebznet-crowdsec
+    ports:
+      - "6060:6060"
+    volumes:
+      - ./data/crowdsec:/var/lib/crowdsec/data
+      - /var/log:/var/log:ro
+    environment:
+      COLLECTIONS: "crowdsecurity/nginx crowdsecurity/sshd"
+      CROWDSEC_COMMUNITY_ID: ${CROWDSEC_COMMUNITY_ID:-}
+      TZ: ${PIHOLE_TIMEZONE:-Europe/Paris}
+    restart: unless-stopped
+    networks:
+      - bebznet
+
+  samba:
+    image: dperson/samba:latest
+    container_name: bebznet-samba
+    ports:
+      - "137:137/udp"
+      - "138:138/udp"
+      - "139:139/tcp"
+      - "445:445/tcp"
+    volumes:
+      - ./data/shares:/shares
+    environment:
+      WORKGROUP: ${SAMBA_WORKGROUP:-WORKGROUP}
+      TZ: ${PIHOLE_TIMEZONE:-Europe/Paris}
+    restart: unless-stopped
+    networks:
+      - bebznet
+    command: '-u "${SAMBA_USER:-samba};${SAMBA_PASSWORD:-changeme}" -s "shares;/shares;yes;no"'
+
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    container_name: bebznet-filebrowser
+    ports:
+      - "${FB_PORT:-8080}:80"
+    volumes:
+      - ./data/filebrowser/files:/srv
+      - ./data/filebrowser/database.db:/database.db
+      - ./data/filebrowser/settings.json:/settings.json
+    environment:
+      FB_ADMIN: ${FB_ADMIN:-admin}
+      FB_PASSWORD: ${FB_PASSWORD:-changeme}
+    restart: unless-stopped
+    networks:
+      - bebznet
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  bebznet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16

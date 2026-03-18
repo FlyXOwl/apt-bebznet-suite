@@ -1,0 +1,9 @@
+Package: bebznet-suite
+Version: 1.0.0
+Architecture: amd64
+Maintainer: FlyXOwl
+Homepage: https://github.com/FlyXOwl/apt-bebznet-suite
+Depends: docker.io (>= 20.10), docker-compose (>= 1.29), curl, gum (>= 0.8.0)
+Recommends: net-tools, htop
+Priority: optional
+Section: admin
