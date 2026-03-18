@@ -1,0 +1,82 @@
+name: Build and Deploy APT Repository
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: debian:bookworm
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y \
+            build-essential \
+            debhelper \
+            dh-make \
+            dpkg-dev \
+            devscripts \
+            gnupg \
+            reprepro \
+            git \
+            curl
+
+      - name: Import GPG key
+        run: |
+          mkdir -p ~/.gnupg
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 -d > ~/.gnupg/private-key.asc
+          gpg --import ~/.gnupg/private-key.asc
+          rm ~/.gnupg/private-key.asc
+
+      - name: Build DEB package
+        run: |
+          dpkg-buildpackage -us -uc -b
+          mkdir -p /tmp/debs
+          cp ../bebznet-suite_*.deb /tmp/debs/
+
+      - name: Create APT repository structure
+        run: |
+          mkdir -p /tmp/apt-repo/conf
+          mkdir -p /tmp/apt-repo/pool/main
+          
+          cat > /tmp/apt-repo/conf/distributions << EOF
+          Origin: FlyXOwl
+          Label: bebznet-suite
+          Suite: stable
+          Codename: bookworm
+          Architectures: amd64 arm64
+          Components: main
+          Description: bebznet-suite Debian Repository
+          SignWith: ${{ secrets.GPG_KEY_ID }}
+          EOF
+
+      - name: Add packages to repository
+        run: |
+          cd /tmp/apt-repo
+          for deb in /tmp/debs/*.deb; do
+            reprepro -b . includedeb bookworm "$deb"
+          done
+
+      - name: Generate repository metadata
+        run: |
+          cd /tmp/apt-repo
+          reprepro -b . export bookworm
+
+      - name: Publish to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: /tmp/apt-repo
+          cname: flyxowl.github.io
+          
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: deb-packages
+          path: ../bebznet-suite_*.deb
