@@ -11,18 +11,17 @@ clean:
 	rm -rf debian/bebznet-suite
 	rm -f ../bebznet-suite*.deb ../bebznet-suite*.changes ../bebznet-suite*.buildinfo
 	dh_clean
-	@echo "Nettoyage terminé"
 
 install: build
 	@echo "Installation de bebznet-suite..."
-	sudo dpkg -i ../bebznet-suite*.deb
-	sudo apt-get install -f -y
+	dpkg -i ../bebznet-suite*.deb
+	apt-get install -f -y
 	@echo "Installation terminée"
 	@echo "Executez sudo bebznet-config pour modifier la configuration"
 
 remove:
 	@echo "Suppression de bebznet-suite..."
-	sudo apt-get remove -y bebznet-suite 2>/dev/null || true
+	apt-get remove -y bebznet-suite 2>/dev/null || true
 	@echo "bebznet-suite supprimé"
 
 reinstall: remove clean install
