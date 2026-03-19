@@ -65,26 +65,31 @@ jobs:
             release dists/trixie > dists/trixie/Release
 
       - name: Sign APT Release files
-        if: ${{ env.APT_GPG_PRIVATE_KEY != '' }}
+        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
         env:
           GNUPGHOME: /tmp/gnupg
-          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
         run: |
           mkdir -p "$GNUPGHOME"
           chmod 700 "$GNUPGHOME"
-          printf '%s' "$APT_GPG_PRIVATE_KEY" | gpg --batch --import
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
 
           find "$REPO/dists" -type f -name Release -print0 | while IFS= read -r -d '' rel; do
             dir="$(dirname "$rel")"
             # Detached, ASCII-armored signature: Release.gpg
             gpg --batch --yes --pinentry-mode loopback \
-              --passphrase "${{ secrets.APT_GPG_PASSPHRASE }}" \
-              -a -b -o "${rel}.gpg" "$rel"
+              --passphrase "$GPG_PASSPHRASE" \
+              -u "$GPG_KEY_ID" -a -b -o "${rel}.gpg" "$rel"
             # Clearsigned metadata file: InRelease
             gpg --batch --yes --pinentry-mode loopback \
-              --passphrase "${{ secrets.APT_GPG_PASSPHRASE }}" \
-              -o "${dir}/InRelease" --clearsign "$rel"
+              --passphrase "$GPG_PASSPHRASE" \
+              -u "$GPG_KEY_ID" -o "${dir}/InRelease" --clearsign "$rel"
           done
+
+          # Export ASCII-armored public key so users can add it to their keyring
+          gpg --armor --export "$GPG_KEY_ID" > "$REPO/pubkey.gpg"
 
       - name: Generate web pages
         run: |
@@ -110,6 +115,12 @@ jobs:
             printf '<div class="entry"><span class="entry-icon">📄</span><div>'
             printf '<a href="Release">Release</a>'
             printf '<div class="entry-desc">Fichier de métadonnées APT</div></div></div>'
+            printf '<div class="entry"><span class="entry-icon">🔏</span><div>'
+            printf '<a href="InRelease">InRelease</a>'
+            printf '<div class="entry-desc">Métadonnées APT signées (clearsign GPG)</div></div></div>'
+            printf '<div class="entry"><span class="entry-icon">🔑</span><div>'
+            printf '<a href="Release.gpg">Release.gpg</a>'
+            printf '<div class="entry-desc">Signature détachée du fichier Release</div></div></div>'
             printf '<div class="entry"><span class="entry-icon">📂</span><div>'
             printf '<a href="main/">main/</a>'
             printf '<div class="entry-desc">Composant principal</div></div></div>'
@@ -182,6 +193,12 @@ jobs:
             printf '<div class="entry"><span class="entry-icon">📄</span><div>'
             printf '<a href="Release">Release</a>'
             printf '<div class="entry-desc">Fichier de métadonnées APT</div></div></div>'
+            printf '<div class="entry"><span class="entry-icon">🔏</span><div>'
+            printf '<a href="InRelease">InRelease</a>'
+            printf '<div class="entry-desc">Métadonnées APT signées (clearsign GPG)</div></div></div>'
+            printf '<div class="entry"><span class="entry-icon">🔑</span><div>'
+            printf '<a href="Release.gpg">Release.gpg</a>'
+            printf '<div class="entry-desc">Signature détachée du fichier Release</div></div></div>'
             printf '<div class="entry"><span class="entry-icon">📂</span><div>'
             printf '<a href="main/">main/</a>'
             printf '<div class="entry-desc">Composant principal</div></div></div>'
@@ -289,6 +306,6 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.PAGES_DEPLOY_TOKEN }}
           publish_dir: ${{ env.REPO }}
           force_orphan: true
