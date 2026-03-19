@@ -34,7 +34,7 @@ Une seule commande pour déployer **Pi-hole, Nginx, WireGuard, Uptime Kuma, Port
 
 ---
 
-## Installation
+# Installation
 
 ### Étape 1 : Ajouter la clé GPG
 
