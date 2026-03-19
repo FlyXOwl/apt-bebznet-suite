@@ -64,6 +64,27 @@ jobs:
             -o APT::FTPArchive::Release::Components=main \
             release dists/trixie > dists/trixie/Release
 
+      - name: Sign APT Release files
+        if: ${{ secrets.APT_GPG_PRIVATE_KEY != '' }}
+        env:
+          GNUPGHOME: /tmp/gnupg
+        run: |
+          mkdir -p "$GNUPGHOME"
+          chmod 700 "$GNUPGHOME"
+          printf '%s' "${{ secrets.APT_GPG_PRIVATE_KEY }}" | gpg --batch --import
+
+          find "$REPO/dists" -type f -name Release -print0 | while IFS= read -r -d '' rel; do
+            dir="$(dirname "$rel")"
+            # Detached, ASCII-armored signature: Release.gpg
+            gpg --batch --yes --pinentry-mode loopback \
+              --passphrase "${{ secrets.APT_GPG_PASSPHRASE }}" \
+              -a -b -o "${rel}.gpg" "$rel"
+            # Clearsigned metadata file: InRelease
+            gpg --batch --yes --pinentry-mode loopback \
+              --passphrase "${{ secrets.APT_GPG_PASSPHRASE }}" \
+              -o "${dir}/InRelease" --clearsign "$rel"
+          done
+
       - name: Generate web pages
         run: |
           # Copy static pages (index, pool/, dists/)
