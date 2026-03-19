@@ -65,13 +65,14 @@ jobs:
             release dists/trixie > dists/trixie/Release
 
       - name: Sign APT Release files
-        if: ${{ secrets.APT_GPG_PRIVATE_KEY != '' }}
+        if: ${{ env.APT_GPG_PRIVATE_KEY != '' }}
         env:
           GNUPGHOME: /tmp/gnupg
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
         run: |
           mkdir -p "$GNUPGHOME"
           chmod 700 "$GNUPGHOME"
-          printf '%s' "${{ secrets.APT_GPG_PRIVATE_KEY }}" | gpg --batch --import
+          printf '%s' "$APT_GPG_PRIVATE_KEY" | gpg --batch --import
 
           find "$REPO/dists" -type f -name Release -print0 | while IFS= read -r -d '' rel; do
             dir="$(dirname "$rel")"
