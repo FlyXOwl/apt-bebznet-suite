@@ -19,12 +19,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Import GPG signing key
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-        run: |
-          echo "$GPG_PRIVATE_KEY" | base64 -d | gpg --batch --import
-
       - name: Install dependencies & build .deb
         run: |
           sudo apt-get update -q
@@ -70,15 +64,26 @@ jobs:
             -o APT::FTPArchive::Release::Components=main \
             release dists/trixie > dists/trixie/Release
 
-          # Sign Release files (creates Release.gpg and InRelease)
-          gpg --batch --yes --detach-sign --armor \
-            -o dists/bookworm/Release.gpg dists/bookworm/Release
-          gpg --batch --yes --clearsign \
-            -o dists/bookworm/InRelease dists/bookworm/Release
-          gpg --batch --yes --detach-sign --armor \
-            -o dists/trixie/Release.gpg dists/trixie/Release
-          gpg --batch --yes --clearsign \
-            -o dists/trixie/InRelease dists/trixie/Release
+      - name: Sign APT Release files
+        if: ${{ secrets.APT_GPG_PRIVATE_KEY != '' }}
+        env:
+          GNUPGHOME: /tmp/gnupg
+        run: |
+          mkdir -p "$GNUPGHOME"
+          chmod 700 "$GNUPGHOME"
+          printf '%s' "${{ secrets.APT_GPG_PRIVATE_KEY }}" | gpg --batch --import
+
+          find "$REPO/dists" -type f -name Release -print0 | while IFS= read -r -d '' rel; do
+            dir="$(dirname "$rel")"
+            # Detached, ASCII-armored signature: Release.gpg
+            gpg --batch --yes --pinentry-mode loopback \
+              --passphrase "${{ secrets.APT_GPG_PASSPHRASE }}" \
+              -a -b -o "${rel}.gpg" "$rel"
+            # Clearsigned metadata file: InRelease
+            gpg --batch --yes --pinentry-mode loopback \
+              --passphrase "${{ secrets.APT_GPG_PASSPHRASE }}" \
+              -o "${dir}/InRelease" --clearsign "$rel"
+          done
 
       - name: Generate web pages
         run: |
@@ -102,14 +107,8 @@ jobs:
             printf '</header>'
             printf '<main><h1>📋 dists/bookworm</h1><div class="entry-list">'
             printf '<div class="entry"><span class="entry-icon">📄</span><div>'
-            printf '<a href="InRelease">InRelease</a>'
-            printf '<div class="entry-desc">Fichier de métadonnées signé (clearsign)</div></div></div>'
-            printf '<div class="entry"><span class="entry-icon">📄</span><div>'
             printf '<a href="Release">Release</a>'
             printf '<div class="entry-desc">Fichier de métadonnées APT</div></div></div>'
-            printf '<div class="entry"><span class="entry-icon">📄</span><div>'
-            printf '<a href="Release.gpg">Release.gpg</a>'
-            printf '<div class="entry-desc">Signature GPG détachée</div></div></div>'
             printf '<div class="entry"><span class="entry-icon">📂</span><div>'
             printf '<a href="main/">main/</a>'
             printf '<div class="entry-desc">Composant principal</div></div></div>'
@@ -180,14 +179,8 @@ jobs:
             printf '</header>'
             printf '<main><h1>📋 dists/trixie</h1><div class="entry-list">'
             printf '<div class="entry"><span class="entry-icon">📄</span><div>'
-            printf '<a href="InRelease">InRelease</a>'
-            printf '<div class="entry-desc">Fichier de métadonnées signé (clearsign)</div></div></div>'
-            printf '<div class="entry"><span class="entry-icon">📄</span><div>'
             printf '<a href="Release">Release</a>'
             printf '<div class="entry-desc">Fichier de métadonnées APT</div></div></div>'
-            printf '<div class="entry"><span class="entry-icon">📄</span><div>'
-            printf '<a href="Release.gpg">Release.gpg</a>'
-            printf '<div class="entry-desc">Signature GPG détachée</div></div></div>'
             printf '<div class="entry"><span class="entry-icon">📂</span><div>'
             printf '<a href="main/">main/</a>'
             printf '<div class="entry-desc">Composant principal</div></div></div>'
