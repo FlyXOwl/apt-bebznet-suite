@@ -31,10 +31,14 @@ jobs:
 
       - name: Build APT repository
         run: |
-          mkdir -p "$REPO/pool/main" "$REPO/dists/bookworm/main/binary-amd64"
+          mkdir -p "$REPO/pool/main" \
+                   "$REPO/dists/bookworm/main/binary-amd64" \
+                   "$REPO/dists/trixie/main/binary-amd64"
           cp "$DEBS"/*.deb "$REPO/pool/main/" 2>/dev/null \
             || echo "::warning::No .deb packages found — repository will be empty"
           cd "$REPO"
+
+          # bookworm (Debian 12)
           dpkg-scanpackages pool/main /dev/null \
             > dists/bookworm/main/binary-amd64/Packages
           gzip -k dists/bookworm/main/binary-amd64/Packages
@@ -46,6 +50,19 @@ jobs:
             -o APT::FTPArchive::Release::Architectures=amd64 \
             -o APT::FTPArchive::Release::Components=main \
             release dists/bookworm > dists/bookworm/Release
+
+          # trixie (Debian 13)
+          dpkg-scanpackages pool/main /dev/null \
+            > dists/trixie/main/binary-amd64/Packages
+          gzip -k dists/trixie/main/binary-amd64/Packages
+          apt-ftparchive \
+            -o APT::FTPArchive::Release::Origin=FlyXOwl \
+            -o APT::FTPArchive::Release::Label=bebznet-suite \
+            -o APT::FTPArchive::Release::Suite=trixie \
+            -o APT::FTPArchive::Release::Codename=trixie \
+            -o APT::FTPArchive::Release::Architectures=amd64 \
+            -o APT::FTPArchive::Release::Components=main \
+            release dists/trixie > dists/trixie/Release
 
       - name: Generate web pages
         run: |
@@ -126,6 +143,78 @@ jobs:
             printf '<footer><a href="../">← Retour à main</a></footer>'
             printf '</body></html>'
           } > "$REPO/dists/bookworm/main/binary-amd64/index.html"
+
+          # Dynamic dists/trixie/index.html
+          mkdir -p "$REPO/dists/trixie"
+          {
+            printf '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'
+            printf '<meta name="viewport" content="width=device-width,initial-scale=1.0">'
+            printf '<title>dists/trixie — bebznet-suite APT</title>'
+            printf '<style>%s</style></head><body>' "$PAGE_CSS"
+            printf '<header>'
+            printf '<a href="../../">bebznet-suite APT</a><span class="sep">/</span>'
+            printf '<a href="../">dists</a><span class="sep">/</span>'
+            printf '<span class="current">trixie</span>'
+            printf '</header>'
+            printf '<main><h1>📋 dists/trixie</h1><div class="entry-list">'
+            printf '<div class="entry"><span class="entry-icon">📄</span><div>'
+            printf '<a href="Release">Release</a>'
+            printf '<div class="entry-desc">Fichier de métadonnées APT</div></div></div>'
+            printf '<div class="entry"><span class="entry-icon">📂</span><div>'
+            printf '<a href="main/">main/</a>'
+            printf '<div class="entry-desc">Composant principal</div></div></div>'
+            printf '</div></main>'
+            printf '<footer><a href="../">← Retour à dists</a></footer>'
+            printf '</body></html>'
+          } > "$REPO/dists/trixie/index.html"
+
+          # Dynamic dists/trixie/main/index.html
+          mkdir -p "$REPO/dists/trixie/main"
+          {
+            printf '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'
+            printf '<meta name="viewport" content="width=device-width,initial-scale=1.0">'
+            printf '<title>dists/trixie/main — bebznet-suite APT</title>'
+            printf '<style>%s</style></head><body>' "$PAGE_CSS"
+            printf '<header>'
+            printf '<a href="../../../">bebznet-suite APT</a><span class="sep">/</span>'
+            printf '<a href="../../">dists</a><span class="sep">/</span>'
+            printf '<a href="../">trixie</a><span class="sep">/</span>'
+            printf '<span class="current">main</span>'
+            printf '</header>'
+            printf '<main><h1>📋 dists/trixie/main</h1><div class="entry-list">'
+            printf '<div class="entry"><span class="entry-icon">📂</span><div>'
+            printf '<a href="binary-amd64/">binary-amd64/</a>'
+            printf '<div class="entry-desc">Paquets pour architecture amd64</div></div></div>'
+            printf '</div></main>'
+            printf '<footer><a href="../">← Retour à trixie</a></footer>'
+            printf '</body></html>'
+          } > "$REPO/dists/trixie/main/index.html"
+
+          # Dynamic dists/trixie/main/binary-amd64/index.html
+          mkdir -p "$REPO/dists/trixie/main/binary-amd64"
+          {
+            printf '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'
+            printf '<meta name="viewport" content="width=device-width,initial-scale=1.0">'
+            printf '<title>dists/trixie/main/binary-amd64 — bebznet-suite APT</title>'
+            printf '<style>%s</style></head><body>' "$PAGE_CSS"
+            printf '<header>'
+            printf '<a href="../../../../">bebznet-suite APT</a><span class="sep">/</span>'
+            printf '<a href="../../../">dists</a><span class="sep">/</span>'
+            printf '<a href="../../">trixie</a><span class="sep">/</span>'
+            printf '<a href="../">main</a><span class="sep">/</span>'
+            printf '<span class="current">binary-amd64</span>'
+            printf '</header>'
+            printf '<main><h1>📋 dists/trixie/main/binary-amd64</h1><div class="entry-list">'
+            printf '<div class="entry"><span class="entry-icon">📄</span><div>'
+            printf '<a href="Packages">Packages</a>'
+            printf '<div class="entry-desc">Index des paquets (texte brut)</div></div></div>'
+            printf '<div class="entry"><span class="entry-icon">📄</span><div>'
+            printf '<a href="Packages.gz">Packages.gz</a>'
+            printf '<div class="entry-desc">Index des paquets (compressé)</div></div></div>'
+            printf '</div></main>'
+            printf '<footer><a href="../">← Retour à main</a></footer>'
+            printf '</body></html>'
+          } > "$REPO/dists/trixie/main/binary-amd64/index.html"
 
           # Dynamic pool/main/index.html — lists available .deb files
           {
