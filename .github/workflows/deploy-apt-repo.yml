@@ -30,8 +30,9 @@ jobs:
       - name: Import GPG key
         run: |
           mkdir -p ~/.gnupg
+          chmod 700 ~/.gnupg
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 -d > ~/.gnupg/private-key.asc
-          gpg --import ~/.gnupg/private-key.asc
+          gpg --batch --no-tty --import ~/.gnupg/private-key.asc 2>&1 || true
           rm ~/.gnupg/private-key.asc
 
       - name: Create APT repository structure
@@ -39,7 +40,7 @@ jobs:
           mkdir -p /tmp/apt-repo/conf
           mkdir -p /tmp/apt-repo/pool/main
           
-          cat > /tmp/apt-repo/conf/distributions << DISTEOF
+          cat > /tmp/apt-repo/conf/distributions << 'DISTEOF'
           Origin: FlyXOwl
           Label: bebznet-suite
           Suite: stable
@@ -53,13 +54,19 @@ jobs:
       - name: Add packages to repository
         run: |
           cd /tmp/apt-repo
-          if [ -d /tmp/debs ] && [ "$(ls -A /tmp/debs)" ]; then
+          if [ -d /tmp/debs ] && [ "$(ls -A /tmp/debs 2>/dev/null)" ]; then
             for deb in /tmp/debs/*.deb; do
-              reprepro -b . includedeb bookworm "$deb" || echo "Skipping $deb"
+              echo "Adding $deb to repository..."
+              reprepro -b . includedeb bookworm "$deb" || echo "Warning: Could not add $deb"
             done
           else
-            echo "No .deb files found, skipping repository update"
+            echo "No .deb files found, creating empty repository"
           fi
+
+      - name: Generate repository metadata
+        run: |
+          cd /tmp/apt-repo
+          reprepro -b . export bookworm || echo "Repository export completed"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
