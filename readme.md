@@ -13,7 +13,7 @@ Une seule commande pour déployer **Pi-hole, Nginx, WireGuard, Uptime Kuma, Port
 - **Modulaire** - Sélectionnez uniquement les services dont vous avez besoin
 - **Pré-configuré** - paramètres par défaut sensibles pour tout
 - **Sécurisé** - paquets signés GPG
-- **Debian 12+** - Fonctionne sur toutes les versions modernes de Debian
+- **Debian 12+ (Bookworm/Trixie)** - Fonctionne sur toutes les versions modernes de Debian
 
 ---
 
