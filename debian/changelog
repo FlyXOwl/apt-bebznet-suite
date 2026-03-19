@@ -4,4 +4,4 @@ bebznet-suite (1.0.0) bullseye; urgency=medium
   * Support for Debian 11+
   * Services: Pi-hole, Nginx, WireGuard, Uptime Kuma, Portainer, CrowdSec, Samba, FileBrowser
 
- -- FlyXOwl <flyxall8436@gmail.com> , 18 Mar 2026 00:00:00 +0000
+ -- FlyXOwl <flyxall8436@gmail.com> Wed, 18 Mar 2026 00:00:00 +0000

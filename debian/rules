@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
 %:
-	dh $@
+	dh $@ --without usrlocal
 
 override_dh_auto_install:
 	mkdir -p debian/bebznet-suite/usr/local/bin
