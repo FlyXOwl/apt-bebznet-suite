@@ -19,12 +19,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Import GPG signing key
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-        run: |
-          echo "$GPG_PRIVATE_KEY" | base64 -d | gpg --batch --import
-
       - name: Install dependencies & build .deb
         run: |
           sudo apt-get update -q
@@ -70,16 +64,6 @@ jobs:
             -o APT::FTPArchive::Release::Components=main \
             release dists/trixie > dists/trixie/Release
 
-          # Sign Release files (creates Release.gpg and InRelease)
-          gpg --batch --yes --detach-sign --armor \
-            -o dists/bookworm/Release.gpg dists/bookworm/Release
-          gpg --batch --yes --clearsign \
-            -o dists/bookworm/InRelease dists/bookworm/Release
-          gpg --batch --yes --detach-sign --armor \
-            -o dists/trixie/Release.gpg dists/trixie/Release
-          gpg --batch --yes --clearsign \
-            -o dists/trixie/InRelease dists/trixie/Release
-
       - name: Generate web pages
         run: |
           # Copy static pages (index, pool/, dists/)
@@ -102,14 +86,8 @@ jobs:
             printf '</header>'
             printf '<main><h1>📋 dists/bookworm</h1><div class="entry-list">'
             printf '<div class="entry"><span class="entry-icon">📄</span><div>'
-            printf '<a href="InRelease">InRelease</a>'
-            printf '<div class="entry-desc">Fichier de métadonnées signé (clearsign)</div></div></div>'
-            printf '<div class="entry"><span class="entry-icon">📄</span><div>'
             printf '<a href="Release">Release</a>'
             printf '<div class="entry-desc">Fichier de métadonnées APT</div></div></div>'
-            printf '<div class="entry"><span class="entry-icon">📄</span><div>'
-            printf '<a href="Release.gpg">Release.gpg</a>'
-            printf '<div class="entry-desc">Signature GPG détachée</div></div></div>'
             printf '<div class="entry"><span class="entry-icon">📂</span><div>'
             printf '<a href="main/">main/</a>'
             printf '<div class="entry-desc">Composant principal</div></div></div>'
@@ -180,14 +158,8 @@ jobs:
             printf '</header>'
             printf '<main><h1>📋 dists/trixie</h1><div class="entry-list">'
             printf '<div class="entry"><span class="entry-icon">📄</span><div>'
-            printf '<a href="InRelease">InRelease</a>'
-            printf '<div class="entry-desc">Fichier de métadonnées signé (clearsign)</div></div></div>'
-            printf '<div class="entry"><span class="entry-icon">📄</span><div>'
             printf '<a href="Release">Release</a>'
             printf '<div class="entry-desc">Fichier de métadonnées APT</div></div></div>'
-            printf '<div class="entry"><span class="entry-icon">📄</span><div>'
-            printf '<a href="Release.gpg">Release.gpg</a>'
-            printf '<div class="entry-desc">Signature GPG détachée</div></div></div>'
             printf '<div class="entry"><span class="entry-icon">📂</span><div>'
             printf '<a href="main/">main/</a>'
             printf '<div class="entry-desc">Composant principal</div></div></div>'
