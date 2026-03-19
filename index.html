@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>bebznet-suite APT Repository</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    h1 { color: #333; }
+    .section { margin: 20px 0; }
+    code { background: #f4f4f4; padding: 10px; display: block; margin: 10px 0; }
+    pre { background: #f4f4f4; padding: 15px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>bebznet-suite APT Repository</h1>
+  
+  <div class="section">
+    <h2>Installation</h2>
+    <p>Add the repository to your system:</p>
+    <pre>
+# Add GPG key
+curl -fsSL https://raw.githubusercontent.com/FlyXOwl/apt-bebznet-suite/main/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/bebznet-archive-keyring.gpg
+
+# Add repository
+CODENAME="$(. /etc/os-release && echo "$VERSION_CODENAME")"
+echo "deb [signed-by=/usr/share/keyrings/bebznet-archive-keyring.gpg] https://flyxowl.github.io/apt-bebznet-suite $CODENAME main" | sudo tee /etc/apt/sources.list.d/bebznet.list
+
+# Update and install
+sudo apt update
+sudo apt install bebznet-suite
+    </pre>
+  </div>
+
+  <div class="section">
+    <h2>Repository Contents</h2>
+    <ul>
+      <li><a href="dists/">dists/</a> - Distribution files</li>
+      <li><a href="pool/">pool/</a> - Package pool</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>About bebznet-suite</h2>
+    <p>Complete Docker networking stack with:</p>
+    <ul>
+      <li>Pi-hole (DNS & Ad Blocking)</li>
+      <li>Nginx (Reverse Proxy)</li>
+      <li>WireGuard (VPN)</li>
+      <li>Uptime Kuma (Monitoring)</li>
+      <li>Portainer (Docker Management)</li>
+      <li>CrowdSec (Security)</li>
+      <li>Samba (File Sharing)</li>
+      <li>FileBrowser (Web File Manager)</li>
+    </ul>
+  </div>
+
+  <hr>
+  <p>Repository: <a href="https://github.com/FlyXOwl/apt-bebznet-suite">FlyXOwl/apt-bebznet-suite</a></p>
+</body>
+</html>

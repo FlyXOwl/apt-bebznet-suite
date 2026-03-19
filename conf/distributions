@@ -1,0 +1,7 @@
+Origin: FlyXOwl
+Label: bebznet-suite
+Suite: stable
+Codename: bookworm
+Architectures: amd64 arm64 i386
+Components: main
+Description: bebznet-suite Debian Repository
