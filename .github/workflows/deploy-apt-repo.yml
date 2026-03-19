@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-and-deploy:
@@ -41,11 +41,60 @@ jobs:
         run: |
           mkdir -p /tmp/apt-repo/pool/main
           mkdir -p /tmp/apt-repo/dists/bookworm/main/binary-amd64
-          
+
           # Copy packages to pool
           if [ "$(ls -A /tmp/debs/*.deb 2>/dev/null)" ]; then
             cp /tmp/debs/*.deb /tmp/apt-repo/pool/main/
           fi
+
+      - name: Generate APT repository metadata
+        run: |
+          cd /tmp/apt-repo
+
+          # Generate Packages index
+          dpkg-scanpackages pool/main /dev/null > dists/bookworm/main/binary-amd64/Packages
+          gzip -k dists/bookworm/main/binary-amd64/Packages
+
+          # Generate Release file
+          apt-ftparchive \
+            -o APT::FTPArchive::Release::Origin=FlyXOwl \
+            -o APT::FTPArchive::Release::Label=bebznet-suite \
+            -o APT::FTPArchive::Release::Suite=bookworm \
+            -o APT::FTPArchive::Release::Codename=bookworm \
+            -o APT::FTPArchive::Release::Architectures=amd64 \
+            -o APT::FTPArchive::Release::Components=main \
+            release dists/bookworm > dists/bookworm/Release
+
+      - name: Create index pages for subdirectories
+        run: |
+          # index.html for pool/main/
+          {
+            echo '<!DOCTYPE html><html><head><title>pool/main – bebznet-suite APT</title>'
+            echo '<style>body{font-family:Arial,sans-serif;margin:40px}a{color:#0066cc}</style>'
+            echo '</head><body><h1>pool/main</h1><ul>'
+            for deb in /tmp/apt-repo/pool/main/*.deb; do
+              [ -f "$deb" ] && printf '<li><a href="%s">%s</a></li>\n' "$(basename "$deb")" "$(basename "$deb")"
+            done
+            echo '</ul><p><a href="../../">← Retour</a></p></body></html>'
+          } > /tmp/apt-repo/pool/main/index.html
+
+          # index.html for pool/
+          cat > /tmp/apt-repo/pool/index.html << 'POOLEOF'
+          <!DOCTYPE html><html><head><title>pool – bebznet-suite APT</title>
+          <style>body{font-family:Arial,sans-serif;margin:40px}a{color:#0066cc}</style>
+          </head><body><h1>pool</h1><ul>
+          <li><a href="main/">main/</a></li>
+          </ul><p><a href="../">← Retour</a></p></body></html>
+          POOLEOF
+
+          # index.html for dists/
+          cat > /tmp/apt-repo/dists/index.html << 'DISTSEOF'
+          <!DOCTYPE html><html><head><title>dists – bebznet-suite APT</title>
+          <style>body{font-family:Arial,sans-serif;margin:40px}a{color:#0066cc}</style>
+          </head><body><h1>dists</h1><ul>
+          <li><a href="bookworm/">bookworm/</a></li>
+          </ul><p><a href="../">← Retour</a></p></body></html>
+          DISTSEOF
 
       - name: Create index.html
         run: |
@@ -67,7 +116,7 @@ jobs:
           <body>
             <div class="container">
               <h1>🐳 Dépôt APT bebznet-suite</h1>
-              
+
               <div class="section">
                 <h2>📥 Installation</h2>
                 <pre>
@@ -107,7 +156,6 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
-          github_token: ${{ secrets.PAGES_DEPLOY_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: /tmp/apt-repo
-          cname: false
           force_orphan: true
