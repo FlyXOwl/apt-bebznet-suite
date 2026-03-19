@@ -4,16 +4,10 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'debian/**'
-      - 'src/**'
-      - '.github/workflows/deploy-apt-repo.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
   deploy:
@@ -23,84 +17,60 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install APT tools
+      - name: Install build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            reprepro \
-            gnupg \
-            curl \
             build-essential \
             debhelper \
             dh-make \
             dpkg-dev \
-            devscripts
+            devscripts \
+            gnupg \
+            apt-utils
 
-      - name: Build DEB package locally
+      - name: Build DEB package
         run: |
           dpkg-buildpackage -us -uc -b
           mkdir -p /tmp/debs
           cp ../bebznet-suite_*.deb /tmp/debs/ || true
+          echo "=== Built packages ==="
           ls -lah /tmp/debs/
 
-      - name: Create APT repository structure
+      - name: Create repository structure
         run: |
-          mkdir -p /tmp/apt-repo/conf
-          mkdir -p /tmp/apt-repo/db
-          cat > /tmp/apt-repo/conf/distributions << 'DISTEOF'
-          Origin: FlyXOwl
-          Label: bebznet-suite
-          Suite: stable
-          Codename: bookworm
-          Architectures: amd64 i386 arm64
-          Components: main
-          Description: bebznet-suite APT Repository
-          DISTEOF
-          echo "=== distributions file ==="
-          cat /tmp/apt-repo/conf/distributions
-
-      - name: Add packages to repository
-        run: |
-          cd /tmp/apt-repo
-          echo "=== Checking .deb files ==="
-          ls -lah /tmp/debs/
+          mkdir -p /tmp/apt-repo/pool/main
+          mkdir -p /tmp/apt-repo/dists/bookworm/main/binary-amd64
+          
+          # Copy packages to pool
           if [ "$(ls -A /tmp/debs/*.deb 2>/dev/null)" ]; then
-            for deb in /tmp/debs/*.deb; do
-              echo "Processing: $deb"
-              reprepro -Vb . includedeb bookworm "$deb" || echo "Error adding $deb"
-            done
+            cp /tmp/debs/*.deb /tmp/apt-repo/pool/main/
           fi
-          echo "=== Exporting repository ==="
-          reprepro -Vb . export bookworm || true
-          echo ""
-          echo "=== Repository structure after export ==="
-          find /tmp/apt-repo -type f -o -type d | sort
 
       - name: Create index.html
         run: |
-          mkdir -p /tmp/apt-repo
-          cat > /tmp/apt-repo/index.html << 'HTMLEOF'
+          cat > /tmp/apt-repo/index.html << 'EOF'
           <!DOCTYPE html>
           <html>
           <head>
             <title>bebznet-suite APT Repository</title>
             <style>
               body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+              .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
               h1 { color: #333; }
-              .section { margin: 20px 0; background: white; padding: 20px; border-radius: 5px; }
-              code { background: #f4f4f4; padding: 10px; display: block; margin: 10px 0; overflow-x: auto; }
-              pre { background: #f4f4f4; padding: 15px; overflow-x: auto; border-radius: 3px; }
-              a { color: #0066cc; text-decoration: none; }
-              a:hover { text-decoration: underline; }
-              .file-list { background: #f9f9f9; padding: 10px; border-left: 3px solid #0066cc; }
+              h2 { color: #0066cc; }
+              pre { background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; overflow-x: auto; }
+              a { color: #0066cc; }
+              .section { margin: 25px 0; }
             </style>
           </head>
           <body>
-            <h1>Dépôt APT bebznet-suite</h1>
-            <div class="section">
-              <h2>Installation</h2>
-              <p>Ajoutez le dépôt à votre système Debian/Ubuntu :</p>
-              <pre>
+            <div class="container">
+              <h1>🐳 Dépôt APT bebznet-suite</h1>
+              
+              <div class="section">
+                <h2>📥 Installation</h2>
+                <pre>
           # Ajouter la clé GPG
           curl -fsSL https://raw.githubusercontent.com/FlyXOwl/apt-bebznet-suite/main/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/bebznet-archive-keyring.gpg
 
@@ -108,56 +78,47 @@ jobs:
           CODENAME="$(. /etc/os-release && echo "$VERSION_CODENAME")"
           echo "deb [signed-by=/usr/share/keyrings/bebznet-archive-keyring.gpg] https://flyxowl.github.io/apt-bebznet-suite $CODENAME main" | sudo tee /etc/apt/sources.list.d/bebznet.list
 
-          # Mettre à jour et installer
+          # Installer
           sudo apt update
           sudo apt install bebznet-suite
-              </pre>
-            </div>
-            <div class="section">
-              <h2>Structure du dépôt</h2>
-              <div class="file-list">
-                <p><strong>Répertoires disponibles :</strong></p>
+                </pre>
+              </div>
+
+              <div class="section">
+                <h2>📂 Structure</h2>
                 <ul>
-                  <li><a href="dists/">dists/</a> - Métadonnées de distribution</li>
-                  <li><a href="pool/">pool/</a> - Fichiers de paquets</li>
+                  <li><a href="pool/main/">pool/main/</a> - Paquets</li>
+                  <li><a href="dists/">dists/</a> - Métadonnées</li>
                 </ul>
               </div>
+
+              <div class="section">
+                <h2>📖 À propos</h2>
+                <p>Suite complète Docker networking avec Pi-hole, Nginx, WireGuard, Uptime Kuma, Portainer, CrowdSec, Samba et FileBrowser.</p>
+              </div>
+
+              <hr>
+              <p><a href="https://github.com/FlyXOwl/apt-bebznet-suite">GitHub Repository</a></p>
             </div>
-            <div class="section">
-              <h2>À propos de bebznet-suite</h2>
-              <p>Pile complète de réseau Docker incluant :</p>
-              <ul>
-                <li>Pi-hole (Filtrage DNS et blocage des annonces)</li>
-                <li>Nginx (Proxy inverse et équilibreur de charge)</li>
-                <li>WireGuard (Serveur VPN)</li>
-                <li>Uptime Kuma (Surveillance et alertes)</li>
-                <li>Portainer (Gestion des conteneurs Docker)</li>
-                <li>CrowdSec (Détection et prévention des intrusions)</li>
-                <li>Samba (Partage de fichiers)</li>
-                <li>FileBrowser (Gestionnaire de fichiers Web)</li>
-              </ul>
-            </div>
-            <hr>
-            <p style="color: #666;">
-              Dépôt : <a href="https://github.com/FlyXOwl/apt-bebznet-suite">FlyXOwl/apt-bebznet-suite</a><br>
-              Dernière mise à jour : <span id="date"></span>
-            </p>
-            <script>
-              document.getElementById('date').textContent = new Date().toLocaleString();
-            </script>
           </body>
           </html>
-          HTMLEOF
+          EOF
 
-      - name: List final contents
-        run: |
-          echo "=== Final /tmp/apt-repo contents ==="
-          ls -laR /tmp/apt-repo/
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.PAGES_DEPLOY_TOKEN }}
-          publish_dir: /tmp/apt-repo
-          cname: false
-          force_orphan: true
+          path: /tmp/apt-repo
+
+  deploy:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
