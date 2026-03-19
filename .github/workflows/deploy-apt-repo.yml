@@ -65,34 +65,31 @@ jobs:
             release dists/trixie > dists/trixie/Release
 
       - name: Sign APT Release files
-        if: ${{ secrets.APT_GPG_PRIVATE_KEY != '' }}
+        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
         env:
           GNUPGHOME: /tmp/gnupg
-          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
-          APT_GPG_PASSPHRASE: ${{ secrets.APT_GPG_PASSPHRASE }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
         run: |
           mkdir -p "$GNUPGHOME"
           chmod 700 "$GNUPGHOME"
-          printf '%s' "$APT_GPG_PRIVATE_KEY" | gpg --batch --import
-
-          # Capture the fingerprint of the imported key for explicit use below
-          KEY_FP=$(gpg --batch --with-colons --fingerprint \
-            | awk -F: '/^fpr/{print $10; exit}')
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
 
           find "$REPO/dists" -type f -name Release -print0 | while IFS= read -r -d '' rel; do
             dir="$(dirname "$rel")"
             # Detached, ASCII-armored signature: Release.gpg
             gpg --batch --yes --pinentry-mode loopback \
-              --passphrase "$APT_GPG_PASSPHRASE" \
-              -u "$KEY_FP" -a -b -o "${rel}.gpg" "$rel"
+              --passphrase "$GPG_PASSPHRASE" \
+              -u "$GPG_KEY_ID" -a -b -o "${rel}.gpg" "$rel"
             # Clearsigned metadata file: InRelease
             gpg --batch --yes --pinentry-mode loopback \
-              --passphrase "$APT_GPG_PASSPHRASE" \
-              -u "$KEY_FP" -o "${dir}/InRelease" --clearsign "$rel"
+              --passphrase "$GPG_PASSPHRASE" \
+              -u "$GPG_KEY_ID" -o "${dir}/InRelease" --clearsign "$rel"
           done
 
           # Export ASCII-armored public key so users can add it to their keyring
-          gpg --armor --export "$KEY_FP" > "$REPO/pubkey.gpg"
+          gpg --armor --export "$GPG_KEY_ID" > "$REPO/pubkey.gpg"
 
       - name: Generate web pages
         run: |
@@ -309,6 +306,6 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.PAGES_DEPLOY_TOKEN }}
           publish_dir: ${{ env.REPO }}
           force_orphan: true
