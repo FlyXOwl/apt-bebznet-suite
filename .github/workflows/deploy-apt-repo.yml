@@ -18,9 +18,6 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout code
@@ -29,54 +26,53 @@ jobs:
       - name: Install APT tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y reprepro gnupg curl
-
-      - name: Import GPG key
-        run: |
-          mkdir -p ~/.gnupg
-          chmod 700 ~/.gnupg
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 -d > ~/.gnupg/private-key.asc
-          gpg --batch --no-tty --import ~/.gnupg/private-key.asc 2>&1 || true
-          rm ~/.gnupg/private-key.asc
-
-      - name: Build DEB package locally
-        run: |
           sudo apt-get install -y \
+            reprepro \
+            gnupg \
+            curl \
             build-essential \
             debhelper \
             dh-make \
             dpkg-dev \
             devscripts
+
+      - name: Build DEB package locally
+        run: |
           dpkg-buildpackage -us -uc -b
           mkdir -p /tmp/debs
           cp ../bebznet-suite_*.deb /tmp/debs/ || true
+          ls -la /tmp/debs/
 
       - name: Create APT repository structure
         run: |
           mkdir -p /tmp/apt-repo/conf
-          mkdir -p /tmp/apt-repo/pool/main
+          mkdir -p /tmp/apt-repo/db
           
           cat > /tmp/apt-repo/conf/distributions << 'DISTEOF'
           Origin: FlyXOwl
           Label: bebznet-suite
           Suite: stable
           Codename: bookworm
-          Architectures: amd64 arm64 i386
+          Architectures: amd64 i386 arm64
           Components: main
-          Description: bebznet-suite Debian Repository
+          Description: bebznet-suite APT Repository
           DISTEOF
 
       - name: Add packages to repository
         run: |
           cd /tmp/apt-repo
-          if [ -d /tmp/debs ] && [ "$(ls -A /tmp/debs 2>/dev/null)" ]; then
+          if [ "$(ls -A /tmp/debs/*.deb 2>/dev/null)" ]; then
             for deb in /tmp/debs/*.deb; do
               echo "Adding $deb to repository..."
-              reprepro -b . includedeb bookworm "$deb" || true
+              reprepro -Vb . includedeb bookworm "$deb"
             done
           else
-            echo "No .deb files found, creating empty repository"
+            echo "No .deb files found"
           fi
+          
+          echo ""
+          echo "=== Repository Contents ==="
+          find /tmp/apt-repo -type f | head -20
 
       - name: Create index.html
         run: |
@@ -86,66 +82,76 @@ jobs:
           <head>
             <title>bebznet-suite APT Repository</title>
             <style>
-              body { font-family: Arial, sans-serif; margin: 40px; }
+              body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
               h1 { color: #333; }
-              .section { margin: 20px 0; }
-              code { background: #f4f4f4; padding: 10px; display: block; margin: 10px 0; }
-              pre { background: #f4f4f4; padding: 15px; overflow-x: auto; }
+              .section { margin: 20px 0; background: white; padding: 20px; border-radius: 5px; }
+              code { background: #f4f4f4; padding: 10px; display: block; margin: 10px 0; overflow-x: auto; }
+              pre { background: #f4f4f4; padding: 15px; overflow-x: auto; border-radius: 3px; }
+              a { color: #0066cc; }
+              .warning { color: #d9534f; }
             </style>
           </head>
           <body>
-            <h1>bebznet-suite APT Repository</h1>
+            <h1>Dépôt APT bebznet-suite</h1>
             
             <div class="section">
               <h2>Installation</h2>
-              <p>Add the repository to your system:</p>
+              <p>Ajoutez le dépôt à votre système Debian/Ubuntu :</p>
               <pre>
-          # Add GPG key
+          # Ajouter la clé GPG
           curl -fsSL https://raw.githubusercontent.com/FlyXOwl/apt-bebznet-suite/main/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/bebznet-archive-keyring.gpg
-          
-          # Add repository
+
+          # Ajouter le dépôt
           CODENAME="$(. /etc/os-release && echo "$VERSION_CODENAME")"
           echo "deb [signed-by=/usr/share/keyrings/bebznet-archive-keyring.gpg] https://flyxowl.github.io/apt-bebznet-suite $CODENAME main" | sudo tee /etc/apt/sources.list.d/bebznet.list
-          
-          # Update and install
+
+          # Mettre à jour et installer
           sudo apt update
           sudo apt install bebznet-suite
               </pre>
             </div>
 
             <div class="section">
-              <h2>Repository Contents</h2>
+              <h2>Structure du dépôt</h2>
               <ul>
-                <li><a href="dists/">dists/</a> - Distribution files</li>
-                <li><a href="pool/">pool/</a> - Package pool</li>
+                <li><a href="dists/">dists/</a> - Métadonnées de distribution</li>
+                <li><a href="pool/">pool/</a> - Fichiers de paquets</li>
+                <li><a href="index.html">index.html</a> - Cette page</li>
               </ul>
             </div>
 
             <div class="section">
-              <h2>About bebznet-suite</h2>
-              <p>Complete Docker networking stack with:</p>
+              <h2>À propos de bebznet-suite</h2>
+              <p>Pile complète de réseau Docker incluant :</p>
               <ul>
-                <li>Pi-hole (DNS & Ad Blocking)</li>
-                <li>Nginx (Reverse Proxy)</li>
+                <li>Pi-hole (DNS et blocage des annonces)</li>
+                <li>Nginx (Proxy inverse)</li>
                 <li>WireGuard (VPN)</li>
-                <li>Uptime Kuma (Monitoring)</li>
-                <li>Portainer (Docker Management)</li>
-                <li>CrowdSec (Security)</li>
-                <li>Samba (File Sharing)</li>
-                <li>FileBrowser (Web File Manager)</li>
+                <li>Uptime Kuma (Surveillance)</li>
+                <li>Portainer (Gestion Docker)</li>
+                <li>CrowdSec (Sécurité)</li>
+                <li>Samba (Partage de fichiers)</li>
+                <li>FileBrowser (Gestionnaire de fichiers Web)</li>
               </ul>
             </div>
 
+            <div class="section">
+              <h2>Dernière version</h2>
+              <p>Télécharger : <a href="https://github.com/FlyXOwl/apt-bebznet-suite/releases">GitHub Releases</a></p>
+            </div>
+
             <hr>
-            <p>Repository: <a href="https://github.com/FlyXOwl/apt-bebznet-suite">FlyXOwl/apt-bebznet-suite</a></p>
+            <p style="color: #666;">
+              Dépôt : <a href="https://github.com/FlyXOwl/apt-bebznet-suite">FlyXOwl/apt-bebznet-suite</a><br>
+              Dernière mise à jour : <code id="date"></code>
+            </p>
+            
+            <script>
+              document.getElementById('date').textContent = new Date().toLocaleString();
+            </script>
           </body>
           </html>
           HTMLEOF
-
-      - name: List repository contents
-        run: |
-          echo "=== Repository Structure ==="
-          ls -laR /tmp/apt-repo/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
