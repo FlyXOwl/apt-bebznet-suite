@@ -1,6 +1,7 @@
 private-key.asc
 private-key.b64
 *.gpg
+token.txt
 !pubkey.gpg
 
 debian/bebznet-suite
