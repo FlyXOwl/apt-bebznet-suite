@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install build dependencies
         run: |
@@ -42,7 +42,7 @@ jobs:
       - name: Configure GPG
         run: |
           echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
-          gpgconf --kill gpg-agent
+          gpgconf --kill gpg-agent || true
           gpgconf --launch gpg-agent
 
       - name: Build DEB package
@@ -56,20 +56,14 @@ jobs:
           cd /tmp/debs
           for deb in *.deb; do
             dpkg-sig -k ${{ secrets.GPG_KEY_ID }} --sign builder "$deb" \
-              --passphrase="${{ secrets.GPG_PASSPHRASE }}" || true
+              --passphrase="${{ secrets.GPG_PASSPHRASE }}" || echo "Signing skipped for $deb"
           done
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: deb-packages
           path: /tmp/debs/*.deb
-
-      - name: Extract version
-        id: version
-        run: |
-          VERSION=$(grep "^Package:" debian/control | head -1)
-          echo "version=$(grep '^Version:' debian/control | awk '{print $2}')" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
