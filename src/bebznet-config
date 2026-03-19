@@ -55,7 +55,7 @@ install_gum() {
     ARCH=$(uname -m)
     case $ARCH in
         x86_64)
-            ARCH="amd64"
+            ARCH="x86_64"
             ;;
         aarch64)
             ARCH="arm64"
@@ -66,10 +66,13 @@ install_gum() {
             ;;
     esac
     
-    GUM_VERSION="0.14.2"
-    GUM_URL="https://github.com/charmbracelet/gum/releases/download/v${GUM_VERSION}/gum-linux-${ARCH}.tar.gz"
+    GUM_VERSION="0.17.0"
+    GUM_URL="https://github.com/charmbracelet/gum/releases/download/v${GUM_VERSION}/gum_${GUM_VERSION}_Linux_${ARCH}.tar.gz"
     
-    curl -fsSL "$GUM_URL" | tar xzf - -C /usr/local/bin gum
+    if ! curl -fsSL "$GUM_URL" | tar xzf - -C /usr/local/bin --strip-components=1 "gum_${GUM_VERSION}_Linux_${ARCH}/gum"; then
+        echo -e "${COLOR_RED}Échec de l'installation de gum.${NC}"
+        exit 1
+    fi
     chmod +x /usr/local/bin/gum
     
     echo "gum installé avec succès"
