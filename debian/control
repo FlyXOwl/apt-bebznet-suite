@@ -1,13 +1,18 @@
-Source: bebznet-suite
-Maintainer: FlyXOwl <flyxall8436@gmail.com>
-Homepage: https://github.com/FlyXOwl/apt-bebznet-suite
-Section: admin
-Priority: optional
-Standards-Version: 4.6.0
-Build-Depends: debhelper-compat (= 13)
-
 Package: bebznet-suite
-Architecture: amd64
 Version: 1.0.0
-Depends: docker.io (>= 20.10), docker-compose (>= 1.29), curl, gum (>= 0.8.0)
-Recommends: net-tools, htop
+Section: net
+Priority: optional
+Architecture: amd64
+Maintainer: FlyXOwl <theoleo33@gmail.com>
+Homepage: https://github.com/FlyXOwl/apt-bebznet-suite
+Description: Complete Docker networking suite
+ Docker suite for networking with integrated services:
+ .
+ - Pi-hole (DNS filtering & ad blocking)
+ - Nginx (Reverse proxy & load balancer)
+ - WireGuard (VPN server)
+ - Uptime Kuma (Monitoring & alerts)
+ - Portainer (Docker container management)
+ - CrowdSec (Intrusion detection & prevention)
+ - Samba (File sharing)
+ - FileBrowser (Web file manager)
