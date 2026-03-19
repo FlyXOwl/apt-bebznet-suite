@@ -11,7 +11,6 @@ Une seule commande pour déployer **Pi-hole, Nginx, WireGuard, Uptime Kuma, Port
 - **Configuration CLI Interactive** - Configuration simple basée sur des menus avec `gum`
 - **Basé sur Docker** - Tous les services s'exécutent dans des conteneurs
 - **Modulaire** - Sélectionnez uniquement les services dont vous avez besoin
-- **Installation en une commande** - Simplement `apt install bebznet-suite`
 - **Pré-configuré** - paramètres par défaut sensibles pour tout
 - **Sécurisé** - paquets signés GPG
 - **Debian 12+** - Fonctionne sur toutes les versions modernes de Debian
