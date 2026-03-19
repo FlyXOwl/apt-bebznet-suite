@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dists — bebznet-suite APT</title>
+  <style>
+    :root { --bg:#0d1117; --surface:#161b22; --border:#30363d; --accent:#58a6ff; --text:#c9d1d9; --muted:#8b949e; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 18px 28px; display: flex; align-items: center; gap: 14px; }
+    header a { color: var(--accent); text-decoration: none; font-size: 13px; }
+    header a:hover { text-decoration: underline; }
+    .sep { color: var(--border); }
+    .breadcrumb { font-size: 13px; color: var(--muted); }
+    .current { color: var(--text); font-weight: 600; }
+    main { max-width: 760px; margin: 40px auto; padding: 0 20px; flex: 1; }
+    h1 { font-size: 1.5rem; font-weight: 700; color: #f0f6fc; margin-bottom: 20px; }
+    .entry-list { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .entry { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--border); transition: background .15s; }
+    .entry:last-child { border-bottom: none; }
+    .entry:hover { background: var(--surface); }
+    .entry-icon { font-size: 20px; }
+    .entry a { color: var(--accent); text-decoration: none; font-size: 14px; font-weight: 500; }
+    .entry a:hover { text-decoration: underline; }
+    .entry-desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    footer { text-align: center; padding: 24px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="../">bebznet-suite APT</a>
+    <span class="sep">/</span>
+    <span class="breadcrumb current">dists</span>
+  </header>
+  <main>
+    <h1>📋 dists</h1>
+    <div class="entry-list">
+      <div class="entry">
+        <span class="entry-icon">📂</span>
+        <div>
+          <a href="bookworm/">bookworm/</a>
+          <div class="entry-desc">Métadonnées APT pour Debian 12 (Bookworm)</div>
+        </div>
+      </div>
+      <div class="entry">
+        <span class="entry-icon">📂</span>
+        <div>
+          <a href="trixie/">trixie/</a>
+          <div class="entry-desc">Métadonnées APT pour Debian 13 (Trixie)</div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer><a href="../">← Retour à l'accueil</a></footer>
+</body>
+</html>

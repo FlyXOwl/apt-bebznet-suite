@@ -1,0 +1,23 @@
+Architectures: amd64
+Codename: bookworm
+Components: main
+Date: Thu, 19 Mar 2026 19:07:46 +0000
+Label: bebznet-suite
+Origin: FlyXOwl
+Suite: bookworm
+MD5Sum:
+ f9f758395064ef5ea64f70d8ea8f1a5c              148 Release
+ 55be3ef937ce0cc56df6ce01ad2f82c2              861 main/binary-amd64/Packages
+ 6441bc61783a480b2c4542a71d71ef1a              584 main/binary-amd64/Packages.gz
+SHA1:
+ 1ac3bc553f5aef3709978254842b9f3af9e7e4b0              148 Release
+ 8eaed0e30fc2cfab0bebdcf19fca96963e6a89de              861 main/binary-amd64/Packages
+ 0e0905b8014d75e759002cd4f8894a39fca5c680              584 main/binary-amd64/Packages.gz
+SHA256:
+ 08cb32e85390ab079f872ac2796aca15e32ec1f6582409ce5b5a0fcdf90eb3aa              148 Release
+ 32da1f82b1eb8fb0fe4b4237a50c51ff28473ff904454c2f1957c876d6c107f4              861 main/binary-amd64/Packages
+ f3ba8f0a731b6dea1873afefe25da501c7a6ad1f73eb3115765a80b661429140              584 main/binary-amd64/Packages.gz
+SHA512:
+ 5b509247826ec3e884456a6ac90190316c160acc986c7ca5cfd869b4b5dbf52f15729a6a2fec2ef2601762c38b13a80f81f4971e63c52ff50659236420161b6d              148 Release
+ 4d3ac86a6514bdd39230ca6bc0bb2035eb617f629adc6830ffabe1d0c9fb05ff9da59d1d62399d4291ecd7b5c2c91750cbe8f5cbbcdf7defd25a058260db295a              861 main/binary-amd64/Packages
+ 8651dc8883f2a21795f3f6e55a63b4e93e939ad398117439e3ff9a6867edf7eae700860209dc30cacef83c356c31e60bb50e5b3190b3c7f89a53d0c169158987              584 main/binary-amd64/Packages.gz

@@ -1,0 +1,26 @@
+Package: bebznet-suite
+Version: 1.0.0
+Architecture: amd64
+Maintainer: FlyXOwl <theoleo33@gmail.com>
+Installed-Size: 40
+Depends: docker.io, docker-compose
+Filename: pool/main/bebznet-suite_1.0.0_amd64.deb
+Size: 7398
+MD5sum: 0b076ad6ab236ef4181207ff7f0585d2
+SHA1: 6cb32bbfe5f8e83d587633108e51730ffaf7129b
+SHA256: cb179e68e39658e90270e81e5d8f9814b23a7f640a9745555fa1446cfd10a3e9
+Section: net
+Priority: optional
+Homepage: https://github.com/FlyXOwl/apt-bebznet-suite
+Description: Complete Docker networking suite
+ Docker suite for networking with integrated services:
+ .
+ - Pi-hole (DNS filtering & ad blocking)
+ - Nginx (Reverse proxy & load balancer)
+ - WireGuard (VPN server)
+ - Uptime Kuma (Monitoring & alerts)
+ - Portainer (Docker container management)
+ - CrowdSec (Intrusion detection & prevention)
+ - Samba (File sharing)
+ - FileBrowser (Web file manager)
+

@@ -1,0 +1,42 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Architectures: amd64
+Codename: trixie
+Components: main
+Date: Thu, 19 Mar 2026 19:07:47 +0000
+Label: bebznet-suite
+Origin: FlyXOwl
+Suite: trixie
+MD5Sum:
+ 7f9d24d7761d42070aa9820495772446              144 Release
+ 55be3ef937ce0cc56df6ce01ad2f82c2              861 main/binary-amd64/Packages
+ f4f17d11175004de3b8252c44230bbc4              584 main/binary-amd64/Packages.gz
+SHA1:
+ 4f1f0bf47a91ba31bc7011bd4ac59a025a9a2b5c              144 Release
+ 8eaed0e30fc2cfab0bebdcf19fca96963e6a89de              861 main/binary-amd64/Packages
+ 0293093c24037b9fa7601b19c9c2b08c1e23dc02              584 main/binary-amd64/Packages.gz
+SHA256:
+ bafbee81204d5a16d1930bed5472a4d4076189ae7369edf0dc46aedc6e88e998              144 Release
+ 32da1f82b1eb8fb0fe4b4237a50c51ff28473ff904454c2f1957c876d6c107f4              861 main/binary-amd64/Packages
+ 1c3d817c7e8fd51b50f2f2c72b2f3c1a4060255bfe0594951f3c2bd073b25b92              584 main/binary-amd64/Packages.gz
+SHA512:
+ ae754da722dbf1a0f68122b0ecaee1951f8ddeee80b1cd1812cadcbe1c52fbcfb9a1d34acc0b38f21eddd15263a4adef45fd7cb053d4e37482a09b1310b8e6fb              144 Release
+ 4d3ac86a6514bdd39230ca6bc0bb2035eb617f629adc6830ffabe1d0c9fb05ff9da59d1d62399d4291ecd7b5c2c91750cbe8f5cbbcdf7defd25a058260db295a              861 main/binary-amd64/Packages
+ b0664ee19649c11df905097aa86c4a0ca83c32740ffb289def98ece32ff16cf97de1e1ff5d333d0c7bf9839f26551e9f0e152cf2bf94ab1a94963e24216797fa              584 main/binary-amd64/Packages.gz
+-----BEGIN PGP SIGNATURE-----
+
+iQIzBAEBCgAdFiEEizh5R4/AlOBdNAXAysrqAs5dhCMFAmm8SYQACgkQysrqAs5d
+hCM6ghAAj49DkdQ9eAYoi2mkiySbH9HIzvWCHK+KjtuMOuN203YGEeI3zibE93MP
+PnuECdO80K3Rof5KhMLHXnGfoYX8h/P37poAOsddyKfwGttCNkme+xtVbk/0YD8F
+WHFGT4mzO56iWpXG1cho5cpeM/cyjqbPdDh/5PSTxbECJqtlxpQFvh71pxskBEaH
+lXE/XbUkRDsOE7P0esi5+ufImZ8MvrPLVBzpSqC0VWS85Aoi5/M3Hynxb2XOxte9
+sXaMAM108UaeSv49vbttm6O4QtJJdf75F1g9jnkm8NWJIZYJr70arMAdGEp8024J
+/89mvkgdEd91GDV8KCYBOYtBQNH+XsaLn6yJ2CXVQ45ENhAQZjPAh6iZd7nHT0Xd
+Nk9zkyjoF6+rDSTumdUkxCnDRWeBTMFnRqXk1s4fOrHvse36ExhO5zVtGbkPfh6o
+lLUHIQJxmSuY8/oK84mb1EURW3CGDfwH2mu51aShKxaeF4mDDZazZ/FUYDNWBYs/
+dr0dwq+zsPRHicDAXaXLTJfPKXCJe8ce2dZXCXMgkewYMZwC+wyshFYYT9/yYbH6
+FV5PwoYU3UwooXTNhhCq+ZJwrSZ+5azdtSdGXN4hNEIsnsLq3C15GdbbdvfyJP0j
+1VdtxqRaHVircWFegGTt2KhMnmMPyqtb+KSxi4t/IWQHX4ODWHI=
+=RGlg
+-----END PGP SIGNATURE-----

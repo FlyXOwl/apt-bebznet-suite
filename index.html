@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>bebznet-suite — Dépôt APT</title>
+  <style>
+    :root {
+      --bg:      #0d1117;
+      --surface: #161b22;
+      --border:  #30363d;
+      --accent:  #58a6ff;
+      --green:   #3fb950;
+      --text:    #c9d1d9;
+      --muted:   #8b949e;
+      --code-bg: #1a2332;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ── Hero ─────────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(160deg, #0d1117 0%, #161b22 55%, #0d1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 64px 20px 52px;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: rgba(88,166,255,.12);
+      border: 1px solid rgba(88,166,255,.35);
+      border-radius: 20px;
+      padding: 4px 16px;
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 22px;
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 6vw, 3.6rem);
+      font-weight: 800;
+      color: #f0f6fc;
+      letter-spacing: -1px;
+      margin-bottom: 14px;
+    }
+    .hero h1 span { color: var(--accent); }
+
+    .hero p {
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 580px;
+      margin: 0 auto 32px;
+    }
+
+    .badges { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: none;
+      transition: border-color .2s, color .2s;
+    }
+    .badge:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Layout ───────────────────────────────────────── */
+    .container { max-width: 900px; margin: 0 auto; padding: 44px 20px; }
+
+    .section { margin-bottom: 44px; }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #f0f6fc;
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Code block ───────────────────────────────────── */
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .code-header .dots { display: flex; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+
+    pre {
+      padding: 20px 22px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.75;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+      color: #e6edf3;
+    }
+
+    .c   { color: var(--muted); font-style: italic; }   /* comment */
+    .kw  { color: #ff7b72; }                              /* keyword  */
+    .str { color: #a5d6ff; }                              /* string   */
+    .cmd { color: var(--green); }                         /* command  */
+
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 11px;
+      padding: 3px 10px;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .copy-btn:hover  { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .copy-btn.copied { background: var(--green);  border-color: var(--green);  color: #fff; }
+
+    /* ── Services grid ────────────────────────────────── */
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 14px;
+    }
+
+    .service-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 14px;
+      text-align: center;
+      transition: border-color .2s, transform .2s;
+    }
+    .service-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+    .service-icon { font-size: 28px; margin-bottom: 8px; }
+    .service-name { font-size: 13px; font-weight: 600; color: #f0f6fc; margin-bottom: 4px; }
+    .service-desc { font-size: 11px; color: var(--muted); }
+    .service-port { font-size: 10px; color: var(--border); margin-top: 4px; font-family: monospace; }
+
+    /* ── Repo structure links ─────────────────────────── */
+    .links-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .link-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: border-color .2s, transform .2s;
+    }
+    .link-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+    .link-icon { font-size: 24px; }
+    .link-title { font-size: 14px; font-weight: 600; color: var(--accent); }
+    .link-desc  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Footer ───────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 30px 20px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <header class="hero">
+    <div class="hero-badge">Dépôt APT Officiel</div>
+    <h1>🐳 <span>bebznet</span>-suite</h1>
+    <p>Stack réseau Docker complet pour Debian 12+ — déployez tout votre homelab en une seule commande.</p>
+    <div class="badges">
+      <a class="badge" href="https://github.com/FlyXOwl/apt-bebznet-suite">
+        <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
+                   0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
+                   -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66
+                   .07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15
+                   -.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0
+                   1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82
+                   1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01
+                   1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+        GitHub
+      </a>
+      <a class="badge" href="https://github.com/FlyXOwl/apt-bebznet-suite/wiki">📖 Wiki</a>
+      <span class="badge">🐧 Debian 12+ (Bookworm/Trixie)</span>
+      <span class="badge">🔒 Signé GPG</span>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Installation -->
+    <section class="section">
+      <h2 class="section-title">⚡ Installation rapide</h2>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots">
+            <span class="dot dot-r"></span>
+            <span class="dot dot-y"></span>
+            <span class="dot dot-g"></span>
+          </div>
+          <span>bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        </div>
+        <pre><code><span class="c"># 1. Ajouter la clé GPG</span>
+<span class="cmd">curl</span> -fsSL https://raw.githubusercontent.com/FlyXOwl/apt-bebznet-suite/main/pubkey.gpg \
+  | <span class="cmd">sudo gpg</span> --dearmor -o /usr/share/keyrings/bebznet-archive-keyring.gpg
+
+<span class="c"># 2. Ajouter le dépôt</span>
+<span class="kw">CODENAME</span>=<span class="str">"$(. /etc/os-release && echo "$VERSION_CODENAME")"</span>
+<span class="cmd">echo</span> <span class="str">"deb [signed-by=/usr/share/keyrings/bebznet-archive-keyring.gpg] \
+  https://flyxowl.github.io/apt-bebznet-suite $CODENAME main"</span> \
+  | <span class="cmd">sudo tee</span> /etc/apt/sources.list.d/bebznet.list
+
+<span class="c"># 3. Installer</span>
+<span class="cmd">sudo apt update</span> &amp;&amp; <span class="cmd">sudo apt install</span> bebznet-suite</code></pre>
+      </div>
+    </section>
+
+    <!-- Services -->
+    <section class="section">
+      <h2 class="section-title">🧩 Services inclus</h2>
+      <div class="services-grid">
+        <div class="service-card">
+          <div class="service-icon">🔵</div>
+          <div class="service-name">Pi-hole</div>
+          <div class="service-desc">DNS &amp; ad-blocking</div>
+          <div class="service-port">:53 · :80 · :443</div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">🌐</div>
+          <div class="service-name">Nginx</div>
+          <div class="service-desc">Reverse proxy</div>
+          <div class="service-port">:80 · :443</div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">🔗</div>
+          <div class="service-name">Unbound</div>
+          <div class="service-desc">Résolveur DNS</div>
+          <div class="service-port">:5053</div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">🔐</div>
+          <div class="service-name">WireGuard</div>
+          <div class="service-desc">Gestion VPN</div>
+          <div class="service-port">:51820 · :51821</div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">⏱️</div>
+          <div class="service-name">Uptime Kuma</div>
+          <div class="service-desc">Monitoring</div>
+          <div class="service-port">:3001</div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">🐳</div>
+          <div class="service-name">Portainer</div>
+          <div class="service-desc">Interface Docker</div>
+          <div class="service-port">:9000</div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">🛡️</div>
+          <div class="service-name">CrowdSec</div>
+          <div class="service-desc">Détection menaces</div>
+          <div class="service-port">:6060</div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">📁</div>
+          <div class="service-name">Samba</div>
+          <div class="service-desc">Partage fichiers</div>
+          <div class="service-port">:445</div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">🗂️</div>
+          <div class="service-name">FileBrowser</div>
+          <div class="service-desc">Fichiers web</div>
+          <div class="service-port">:8080</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Structure -->
+    <section class="section">
+      <h2 class="section-title">📂 Structure du dépôt</h2>
+      <div class="links-grid">
+        <a class="link-card" href="pool/main/">
+          <span class="link-icon">📦</span>
+          <div>
+            <div class="link-title">pool/main/</div>
+            <div class="link-desc">Paquets .deb téléchargeables</div>
+          </div>
+        </a>
+        <a class="link-card" href="dists/">
+          <span class="link-icon">📋</span>
+          <div>
+            <div class="link-title">dists/</div>
+            <div class="link-desc">Métadonnées APT (Release, Packages)</div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>
+      Maintenu par <a href="https://github.com/FlyXOwl">FlyXOwl</a> ·
+      <a href="https://github.com/FlyXOwl/apt-bebznet-suite">Voir sur GitHub</a> ·
+      <a href="https://github.com/FlyXOwl/apt-bebznet-suite/wiki">Documentation</a>
+    </p>
+  </footer>
+
+  <script>
+    function copyCode(btn) {
+      const pre = btn.closest('.code-block').querySelector('pre');
+      navigator.clipboard.writeText(pre.innerText).then(() => {
+        btn.textContent = '✓ Copié !';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copier'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
