@@ -1,0 +1,74 @@
+name: Deploy APT Repository to GitHub Pages
+
+on:
+  workflow_run:
+    workflows: ["Build DEB Package"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: deb-packages
+          path: /tmp/debs
+
+      - name: Install APT tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y reprepro gnupg
+
+      - name: Import GPG key
+        run: |
+          mkdir -p ~/.gnupg
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 -d > ~/.gnupg/private-key.asc
+          gpg --import ~/.gnupg/private-key.asc
+          rm ~/.gnupg/private-key.asc
+
+      - name: Create APT repository structure
+        run: |
+          mkdir -p /tmp/apt-repo/conf
+          mkdir -p /tmp/apt-repo/pool/main
+          
+          cat > /tmp/apt-repo/conf/distributions << DISTEOF
+          Origin: FlyXOwl
+          Label: bebznet-suite
+          Suite: stable
+          Codename: bookworm
+          Architectures: amd64 arm64 i386
+          Components: main
+          Description: bebznet-suite Debian Repository
+          SignWith: ${{ secrets.GPG_KEY_ID }}
+          DISTEOF
+
+      - name: Add packages to repository
+        run: |
+          cd /tmp/apt-repo
+          if [ -d /tmp/debs ] && [ "$(ls -A /tmp/debs)" ]; then
+            for deb in /tmp/debs/*.deb; do
+              reprepro -b . includedeb bookworm "$deb" || echo "Skipping $deb"
+            done
+          else
+            echo "No .deb files found, skipping repository update"
+          fi
+
+      - name: Generate repository metadata
+        run: |
+          cd /tmp/apt-repo
+          reprepro -b . export bookworm || true
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: /tmp/apt-repo
+          cname: false
