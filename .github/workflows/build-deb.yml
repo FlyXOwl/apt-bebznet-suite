@@ -2,14 +2,8 @@ name: Build DEB Package
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'src/**'
-      - 'debian/**'
-      - 'Makefile'
-      - '.github/workflows/build-deb.yml'
-  workflow_dispatch:
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -29,16 +23,7 @@ jobs:
             dh-make \
             dpkg-dev \
             devscripts \
-            gnupg \
-            curl
-
-      - name: Import GPG key
-        run: |
-          mkdir -p ~/.gnupg
-          chmod 700 ~/.gnupg
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 -d > ~/.gnupg/private-key.asc
-          gpg --batch --no-tty --import ~/.gnupg/private-key.asc 2>&1 || true
-          rm ~/.gnupg/private-key.asc
+            gnupg
 
       - name: Build DEB package
         run: |
