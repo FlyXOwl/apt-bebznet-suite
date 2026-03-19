@@ -6,7 +6,7 @@ Une seule commande pour déployer **Pi-hole, Nginx, WireGuard, Uptime Kuma, Port
 
 ---
 
-## Fonctionnalités
+# Fonctionnalités
 
 - **Configuration CLI Interactive** - Configuration simple basée sur des menus avec `gum`
 - **Basé sur Docker** - Tous les services s'exécutent dans des conteneurs
@@ -18,7 +18,7 @@ Une seule commande pour déployer **Pi-hole, Nginx, WireGuard, Uptime Kuma, Port
 
 ---
 
-## Services Inclus
+# Services Inclus
 
 | Service | Objectif | Port |
 |---------|----------|------|
