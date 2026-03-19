@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -94,31 +94,5 @@ jobs:
 
               <div class="section">
                 <h2>📖 À propos</h2>
-                <p>Suite complète Docker networking avec Pi-hole, Nginx, WireGuard, Uptime Kuma, Portainer, CrowdSec, Samba et FileBrowser.</p>
-              </div>
-
-              <hr>
-              <p><a href="https://github.com/FlyXOwl/apt-bebznet-suite">GitHub Repository</a></p>
-            </div>
-          </body>
-          </html>
-          EOF
-
-      - name: Upload to GitHub Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: /tmp/apt-repo
-
-  deploy:
-    needs: deploy
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+                <p>Suite complète Docker networking avec Pi-hole, Nginx, WireGuard, Uptime Kuma, Portainer, CrowdSec, Samba et Fil
+
