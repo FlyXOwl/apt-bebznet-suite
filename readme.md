@@ -36,4 +36,4 @@ Une seule commande pour déployer **Pi-hole, Nginx, WireGuard, Uptime Kuma, Port
 
 # Wiki
 
-Pour comprendre et voir comment utiliser bebznet-suite, referez vous au wiki : https://github.com/FlyXOwl/apt-bebznet-suite/wiki
+Pour comprendre et voir comment utiliser bebznet-suite, referez vous au [WIKI](https://github.com/FlyXOwl/apt-bebznet-suite/wiki)
