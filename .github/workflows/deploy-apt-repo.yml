@@ -1,3 +1,13 @@
+Copilot said: # 🔍 Problème : reprepro Ne Crée
+🔍 Problème : reprepro Ne Crée Pas Les Fichiers
+
+Le workflow exécute reprepro mais les répertoires dists/ et pool/ ne sont pas créés correctement.
+✅ Solution : Déboguer et Forcer la Création
+bash
+
+cd ~/apt-bebznet-suite
+
+cat > .github/workflows/deploy-apt-repo.yml << 'EOF'
 name: Deploy APT Repository to GitHub Pages
 
 on:
@@ -41,7 +51,7 @@ jobs:
           dpkg-buildpackage -us -uc -b
           mkdir -p /tmp/debs
           cp ../bebznet-suite_*.deb /tmp/debs/ || true
-          ls -la /tmp/debs/
+          ls -lah /tmp/debs/
 
       - name: Create APT repository structure
         run: |
@@ -57,22 +67,34 @@ jobs:
           Components: main
           Description: bebznet-suite APT Repository
           DISTEOF
+          
+          echo "=== distributions file ==="
+          cat /tmp/apt-repo/conf/distributions
 
       - name: Add packages to repository
         run: |
           cd /tmp/apt-repo
+          
+          # Vérifier les .deb
+          echo "=== Checking .deb files ==="
+          ls -lah /tmp/debs/
+          
+          # Ajouter les packages avec verbose
           if [ "$(ls -A /tmp/debs/*.deb 2>/dev/null)" ]; then
             for deb in /tmp/debs/*.deb; do
-              echo "Adding $deb to repository..."
-              reprepro -Vb . includedeb bookworm "$deb"
+              echo "Processing: $deb"
+              reprepro -Vb . includedeb bookworm "$deb" || echo "Error adding $deb"
             done
-          else
-            echo "No .deb files found"
           fi
           
+          # Exporter le repo
+          echo "=== Exporting repository ==="
+          reprepro -Vb . export bookworm || true
+          
+          # Afficher la structure
           echo ""
-          echo "=== Repository Contents ==="
-          find /tmp/apt-repo -type f | head -20
+          echo "=== Repository structure after export ==="
+          find /tmp/apt-repo -type f -o -type d | sort
 
       - name: Create index.html
         run: |
@@ -87,8 +109,10 @@ jobs:
               .section { margin: 20px 0; background: white; padding: 20px; border-radius: 5px; }
               code { background: #f4f4f4; padding: 10px; display: block; margin: 10px 0; overflow-x: auto; }
               pre { background: #f4f4f4; padding: 15px; overflow-x: auto; border-radius: 3px; }
-              a { color: #0066cc; }
+              a { color: #0066cc; text-decoration: none; }
+              a:hover { text-decoration: underline; }
               .warning { color: #d9534f; }
+              .file-list { background: #f9f9f9; padding: 10px; border-left: 3px solid #0066cc; }
             </style>
           </head>
           <body>
@@ -113,23 +137,25 @@ jobs:
 
             <div class="section">
               <h2>Structure du dépôt</h2>
-              <ul>
-                <li><a href="dists/">dists/</a> - Métadonnées de distribution</li>
-                <li><a href="pool/">pool/</a> - Fichiers de paquets</li>
-                <li><a href="index.html">index.html</a> - Cette page</li>
-              </ul>
+              <div class="file-list">
+                <p><strong>Répertoires disponibles :</strong></p>
+                <ul>
+                  <li><a href="dists/">dists/</a> - Métadonnées de distribution</li>
+                  <li><a href="pool/">pool/</a> - Fichiers de paquets</li>
+                </ul>
+              </div>
             </div>
 
             <div class="section">
               <h2>À propos de bebznet-suite</h2>
               <p>Pile complète de réseau Docker incluant :</p>
               <ul>
-                <li>Pi-hole (DNS et blocage des annonces)</li>
-                <li>Nginx (Proxy inverse)</li>
-                <li>WireGuard (VPN)</li>
-                <li>Uptime Kuma (Surveillance)</li>
-                <li>Portainer (Gestion Docker)</li>
-                <li>CrowdSec (Sécurité)</li>
+                <li>Pi-hole (Filtrage DNS et blocage des annonces)</li>
+                <li>Nginx (Proxy inverse et équilibreur de charge)</li>
+                <li>WireGuard (Serveur VPN)</li>
+                <li>Uptime Kuma (Surveillance et alertes)</li>
+                <li>Portainer (Gestion des conteneurs Docker)</li>
+                <li>CrowdSec (Détection et prévention des intrusions)</li>
                 <li>Samba (Partage de fichiers)</li>
                 <li>FileBrowser (Gestionnaire de fichiers Web)</li>
               </ul>
@@ -143,7 +169,7 @@ jobs:
             <hr>
             <p style="color: #666;">
               Dépôt : <a href="https://github.com/FlyXOwl/apt-bebznet-suite">FlyXOwl/apt-bebznet-suite</a><br>
-              Dernière mise à jour : <code id="date"></code>
+              Dernière mise à jour : <span id="date"></span>
             </p>
             
             <script>
@@ -152,6 +178,11 @@ jobs:
           </body>
           </html>
           HTMLEOF
+
+      - name: List final contents
+        run: |
+          echo "=== Final /tmp/apt-repo contents ==="
+          ls -laR /tmp/apt-repo/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
