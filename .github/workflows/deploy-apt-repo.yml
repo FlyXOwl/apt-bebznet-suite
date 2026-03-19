@@ -2,60 +2,42 @@ name: Deploy APT Repository to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: write
+
+env:
+  REPO: /tmp/apt-repo
+  DEBS: /tmp/debs
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install build dependencies
+      - name: Install dependencies & build .deb
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            debhelper \
-            dh-make \
-            dpkg-dev \
-            devscripts \
-            gnupg \
-            apt-utils
-
-      - name: Build DEB package
-        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends \
+            build-essential debhelper dpkg-dev devscripts gnupg apt-utils
           dpkg-buildpackage -us -uc -b
-          mkdir -p /tmp/debs
-          cp ../bebznet-suite_*.deb /tmp/debs/ || true
-          echo "=== Built packages ==="
-          ls -lah /tmp/debs/
+          mkdir -p "$DEBS"
+          cp ../bebznet-suite_*.deb "$DEBS/" 2>/dev/null \
+            || echo "::warning::No .deb packages were produced by the build"
 
-      - name: Create repository structure
+      - name: Build APT repository
         run: |
-          mkdir -p /tmp/apt-repo/pool/main
-          mkdir -p /tmp/apt-repo/dists/bookworm/main/binary-amd64
-
-          # Copy packages to pool
-          if [ "$(ls -A /tmp/debs/*.deb 2>/dev/null)" ]; then
-            cp /tmp/debs/*.deb /tmp/apt-repo/pool/main/
-          fi
-
-      - name: Generate APT repository metadata
-        run: |
-          cd /tmp/apt-repo
-
-          # Generate Packages index
-          dpkg-scanpackages pool/main /dev/null > dists/bookworm/main/binary-amd64/Packages
+          mkdir -p "$REPO/pool/main" "$REPO/dists/bookworm/main/binary-amd64"
+          cp "$DEBS"/*.deb "$REPO/pool/main/" 2>/dev/null \
+            || echo "::warning::No .deb packages found — repository will be empty"
+          cd "$REPO"
+          dpkg-scanpackages pool/main /dev/null \
+            > dists/bookworm/main/binary-amd64/Packages
           gzip -k dists/bookworm/main/binary-amd64/Packages
-
-          # Generate Release file
           apt-ftparchive \
             -o APT::FTPArchive::Release::Origin=FlyXOwl \
             -o APT::FTPArchive::Release::Label=bebznet-suite \
@@ -65,97 +47,62 @@ jobs:
             -o APT::FTPArchive::Release::Components=main \
             release dists/bookworm > dists/bookworm/Release
 
-      - name: Create index pages for subdirectories
+      - name: Generate web pages
         run: |
-          # index.html for pool/main/
+          # Copy static pages (index, pool/, dists/)
+          cp -r .github/pages/. "$REPO/"
+
+          # Dynamic pool/main/index.html — lists available .deb files
           {
-            echo '<!DOCTYPE html><html><head><title>pool/main – bebznet-suite APT</title>'
-            echo '<style>body{font-family:Arial,sans-serif;margin:40px}a{color:#0066cc}</style>'
-            echo '</head><body><h1>pool/main</h1><ul>'
-            for deb in /tmp/apt-repo/pool/main/*.deb; do
-              [ -f "$deb" ] && printf '<li><a href="%s">%s</a></li>\n' "$(basename "$deb")" "$(basename "$deb")"
-            done
-            echo '</ul><p><a href="../../">← Retour</a></p></body></html>'
-          } > /tmp/apt-repo/pool/main/index.html
-
-          # index.html for pool/
-          cat > /tmp/apt-repo/pool/index.html << 'POOLEOF'
-          <!DOCTYPE html><html><head><title>pool – bebznet-suite APT</title>
-          <style>body{font-family:Arial,sans-serif;margin:40px}a{color:#0066cc}</style>
-          </head><body><h1>pool</h1><ul>
-          <li><a href="main/">main/</a></li>
-          </ul><p><a href="../">← Retour</a></p></body></html>
-          POOLEOF
-
-          # index.html for dists/
-          cat > /tmp/apt-repo/dists/index.html << 'DISTSEOF'
-          <!DOCTYPE html><html><head><title>dists – bebznet-suite APT</title>
-          <style>body{font-family:Arial,sans-serif;margin:40px}a{color:#0066cc}</style>
-          </head><body><h1>dists</h1><ul>
-          <li><a href="bookworm/">bookworm/</a></li>
-          </ul><p><a href="../">← Retour</a></p></body></html>
-          DISTSEOF
-
-      - name: Create index.html
-        run: |
-          cat > /tmp/apt-repo/index.html << 'EOF'
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>bebznet-suite APT Repository</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
-              .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-              h1 { color: #333; }
-              h2 { color: #0066cc; }
-              pre { background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; overflow-x: auto; }
-              a { color: #0066cc; }
-              .section { margin: 25px 0; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <h1>🐳 Dépôt APT bebznet-suite</h1>
-
-              <div class="section">
-                <h2>📥 Installation</h2>
-                <pre>
-          # Ajouter la clé GPG
-          curl -fsSL https://raw.githubusercontent.com/FlyXOwl/apt-bebznet-suite/main/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/bebznet-archive-keyring.gpg
-
-          # Ajouter le dépôt
-          CODENAME="$(. /etc/os-release && echo "$VERSION_CODENAME")"
-          echo "deb [signed-by=/usr/share/keyrings/bebznet-archive-keyring.gpg] https://flyxowl.github.io/apt-bebznet-suite $CODENAME main" | sudo tee /etc/apt/sources.list.d/bebznet.list
-
-          # Installer
-          sudo apt update
-          sudo apt install bebznet-suite
-                </pre>
-              </div>
-
-              <div class="section">
-                <h2>📂 Structure</h2>
-                <ul>
-                  <li><a href="pool/main/">pool/main/</a> - Paquets</li>
-                  <li><a href="dists/">dists/</a> - Métadonnées</li>
-                </ul>
-              </div>
-
-              <div class="section">
-                <h2>📖 À propos</h2>
-                <p>Suite complète Docker networking avec Pi-hole, Nginx, WireGuard, Uptime Kuma, Portainer, CrowdSec, Samba et FileBrowser.</p>
-              </div>
-
-              <hr>
-              <p><a href="https://github.com/FlyXOwl/apt-bebznet-suite">GitHub Repository</a></p>
-            </div>
-          </body>
-          </html>
-          EOF
+            printf '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'
+            printf '<meta name="viewport" content="width=device-width,initial-scale=1.0">'
+            printf '<title>pool/main — bebznet-suite APT</title>'
+            printf '<style>'
+            printf ':root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--accent:#58a6ff;--text:#c9d1d9;--muted:#8b949e}'
+            printf '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}'
+            printf 'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;display:flex;flex-direction:column}'
+            printf 'header{background:var(--surface);border-bottom:1px solid var(--border);padding:18px 28px;display:flex;align-items:center;gap:14px}'
+            printf 'header a{color:var(--accent);text-decoration:none;font-size:13px}'
+            printf 'header a:hover{text-decoration:underline}'
+            printf '.sep{color:var(--border)}.current{color:var(--text);font-weight:600}'
+            printf 'main{max-width:760px;margin:40px auto;padding:0 20px;flex:1}'
+            printf 'h1{font-size:1.5rem;font-weight:700;color:#f0f6fc;margin-bottom:20px}'
+            printf '.entry-list{border:1px solid var(--border);border-radius:10px;overflow:hidden}'
+            printf '.entry{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--border);transition:background .15s}'
+            printf '.entry:last-child{border-bottom:none}.entry:hover{background:var(--surface)}'
+            printf '.entry-icon{font-size:20px}'
+            printf '.entry a{color:var(--accent);text-decoration:none;font-size:14px;font-weight:500}'
+            printf '.entry a:hover{text-decoration:underline}'
+            printf '.entry-meta{color:var(--muted);font-size:12px;margin-top:2px;font-family:monospace}'
+            printf 'footer{text-align:center;padding:24px;border-top:1px solid var(--border);color:var(--muted);font-size:12px}'
+            printf 'footer a{color:var(--accent);text-decoration:none}'
+            printf '.empty{padding:40px;text-align:center;color:var(--muted)}'
+            printf '</style></head><body>'
+            printf '<header><a href="../../">bebznet-suite APT</a><span class="sep">/</span>'
+            printf '<a href="../">pool</a><span class="sep">/</span>'
+            printf '<span class="current">main</span></header>'
+            printf '<main><h1>📦 pool/main</h1><div class="entry-list">'
+            shopt -s nullglob
+            debs=("$REPO/pool/main/"*.deb)
+            if [ ${#debs[@]} -eq 0 ]; then
+              printf '<div class="empty">Aucun paquet disponible pour le moment.</div>'
+            else
+              for deb in "${debs[@]}"; do
+                name=$(basename "$deb")
+                size=$(du -sh "$deb" | cut -f1)
+                printf '<div class="entry"><span class="entry-icon">📦</span><div>'
+                printf '<a href="%s">%s</a>' "$name" "$name"
+                printf '<div class="entry-meta">%s</div></div></div>' "$size"
+              done
+            fi
+            printf '</div></main>'
+            printf '<footer><a href="../../">← Retour à l'"'"'accueil</a></footer>'
+            printf '</body></html>'
+          } > "$REPO/pool/main/index.html"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: /tmp/apt-repo
+          publish_dir: ${{ env.REPO }}
           force_orphan: true
