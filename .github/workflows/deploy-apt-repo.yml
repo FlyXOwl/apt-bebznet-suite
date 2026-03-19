@@ -16,6 +16,11 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    env:
+      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -65,12 +70,9 @@ jobs:
             release dists/trixie > dists/trixie/Release
 
       - name: Sign APT Release files
-        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
+        if: env.GPG_PRIVATE_KEY != ''
         env:
           GNUPGHOME: /tmp/gnupg
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
         run: |
           mkdir -p "$GNUPGHOME"
           chmod 700 "$GNUPGHOME"
@@ -306,6 +308,6 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
-          github_token: ${{ secrets.PAGES_DEPLOY_TOKEN }}
+          github_token: ${{ secrets.PAGES_DEPLOY_TOKEN || github.token }}
           publish_dir: ${{ env.REPO }}
           force_orphan: true
